@@ -6,7 +6,7 @@ from absl import app
 from pysc2.agents import base_agent
 from pysc2.lib import actions, features, units
 from pysc2.env import sc2_env, run_loop
-
+import time
 
 class QLearningTable:
     def __init__(self, actions, learning_rate=0.01, reward_decay=0.9):
@@ -317,8 +317,10 @@ def main(unused_argv):
     agent2 = sc2_env.Bot(sc2_env.Race.random,
                                sc2_env.Difficulty.very_easy)#RandomAgent()
     gameCount = 0
+    start_time = time.time()
     try:
-        while gameCount < 100:
+        while gameCount < 25:
+            gameCount += 1
             with sc2_env.SC2Env(
                     map_name="Simple64",
                     players=[sc2_env.Agent(sc2_env.Race.terran),
@@ -344,9 +346,74 @@ def main(unused_argv):
                         if timesteps[0].last():
                             break
                         timesteps = env.step(step_actions)
+
     except KeyboardInterrupt:
         pass
-
+    finally:
+        elapsed_time = time.time() - start_time
+        print("Took %.3f seconds for %s steps: %.3f fps" % (
+            elapsed_time))
 
 if __name__ == "__main__":
     app.run(main)
+
+'''
+def run_loop(agents, env, max_frames=0, max_episodes=0):
+  """A run loop to have agents and an environment interact."""
+  total_frames = 0
+  total_episodes = 0
+  start_time = time.time()
+
+  observation_spec = env.observation_spec()
+  action_spec = env.action_spec()
+  for agent, obs_spec, act_spec in zip(agents, observation_spec, action_spec):
+    agent.setup(obs_spec, act_spec)
+
+  try:
+    while not max_episodes or total_episodes < max_episodes:
+      total_episodes += 1
+      timesteps = env.reset()
+      for a in agents:
+        a.reset()
+      while True:
+        total_frames += 1
+        actions = [agent.step(timestep)
+                   for agent, timestep in zip(agents, timesteps)]
+        if max_frames and total_frames >= max_frames:
+          return
+        if timesteps[0].last():
+          break
+        timesteps = env.step(actions)
+  except KeyboardInterrupt:
+    pass
+  finally:
+    elapsed_time = time.time() - start_time
+    print("Took %.3f seconds for %s steps: %.3f fps" % (
+        elapsed_time, total_frames, total_frames / elapsed_time))
+'''
+
+'''
+class BaseAgent(object):
+  """A base agent to write custom scripted agents.
+  It can also act as a passive agent that does nothing but no-ops.
+  """
+
+  def __init__(self):
+    self.reward = 0
+    self.episodes = 0
+    self.steps = 0
+    self.obs_spec = None
+    self.action_spec = None
+
+  def setup(self, obs_spec, action_spec):
+    self.obs_spec = obs_spec
+    self.action_spec = action_spec
+
+  def reset(self):
+    self.episodes += 1
+
+  def step(self, obs):
+    self.steps += 1
+    self.reward += obs.reward
+    return actions.FunctionCall(actions.FUNCTIONS.no_op.id, [])
+'''
