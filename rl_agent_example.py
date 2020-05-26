@@ -314,7 +314,7 @@ class SmartAgent(Agent):
 
 def main(unused_argv):
     agent1 = SmartAgent()
-    agent2 = sc2_env.Bot(sc2_env.Race.random,
+    agent2 = sc2_env.Bot(sc2_env.Race.zerg,
                                sc2_env.Difficulty.very_easy)#RandomAgent()
     gameCount = 0
     start_time = time.time()
@@ -342,7 +342,7 @@ def main(unused_argv):
                     agent1.reset()
 
                     while True:
-                        step_actions = [agent1.step(timesteps[0])]
+                        print(timestepszerg                    step_actions = [agent1.step(timesteps[0])]
                         if timesteps[0].last():
                             break
                         timesteps = env.step(step_actions)
