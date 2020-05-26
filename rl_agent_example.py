@@ -40,17 +40,16 @@ class QLearningTable:
                                                          index=self.q_table.columns,
                                                          name=state))
 
-
 class Agent(base_agent.BaseAgent):
     actions = ("do_nothing",
                "harvest_minerals",
-               "harvest_vespene",
-               "build_geyser",
+               #"harvest_vespene",
+               #"build_geyser",
                "build_supply_depot",
                "build_barracks",
-               "build_engineering_bay",
+               #"build_engineering_bay",
                "train_marine",
-               "train_marauder",
+               #"train_marauder",
                "attack")
 
     def get_my_units_by_type(self, obs, unit_type):
@@ -113,6 +112,18 @@ class Agent(base_agent.BaseAgent):
             mineral_patch = mineral_patches[np.argmin(distances)]
             return actions.RAW_FUNCTIONS.Harvest_Gather_unit(
                 "now", scv.tag, mineral_patch.tag)
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def build_refinery(self, obs):
+        refinery = self.get_my_units_by_type(obs, units.Terran.Refinery)
+        scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
+        if (len(refinery) == 0 and obs.observation.player.minerals >= 75 and
+                len(scvs) > 0):
+            refinery_xy = (22, 26) if self.base_top_left else (35, 42)
+            distances = self.get_distances(obs, scvs, refinery_xy)
+            scv = scvs[np.argmin(distances)]
+            return actions.RAW_FUNCTIONS.Build_Refinery_pt(
+                "now", scv.tag, refinery_xy)
         return actions.RAW_FUNCTIONS.no_op()
 
     # Set a check to see if refinery is built. If not, build a refinery. If refinery is empty, build another refinery.
@@ -303,21 +314,36 @@ class SmartAgent(Agent):
 
 def main(unused_argv):
     agent1 = SmartAgent()
-    agent2 = RandomAgent()
+    agent2 = sc2_env.Bot(sc2_env.Race.random,
+                               sc2_env.Difficulty.very_easy)#RandomAgent()
+    gameCount = 0
     try:
-        with sc2_env.SC2Env(
-                map_name="Simple64",
-                players=[sc2_env.Agent(sc2_env.Race.terran),
-                         sc2_env.Agent(sc2_env.Race.terran)],
-                agent_interface_format=features.AgentInterfaceFormat(
-                    action_space=actions.ActionSpace.RAW,
-                    use_raw_units=True,
-                    raw_resolution=64,
-                ),
-                step_mul=48,
-                disable_fog=True,
-        ) as env:
-            run_loop.run_loop([agent1, agent2], env, max_episodes=1000)
+        while gameCount < 100:
+            with sc2_env.SC2Env(
+                    map_name="Simple64",
+                    players=[sc2_env.Agent(sc2_env.Race.terran),
+                            agent2],
+
+                    agent_interface_format=features.AgentInterfaceFormat(
+                        action_space=actions.ActionSpace.RAW,
+                        use_raw_units=True,
+                        raw_resolution=64,
+                        feature_dimensions=features.Dimensions(screen=84, minimap=64)),
+                    step_mul=48,
+                    game_steps_per_episode=0,
+                    disable_fog=True,
+                    visualize=True) as env:
+
+                    agent1.setup(env.observation_spec(), env.action_spec())
+
+                    timesteps = env.reset()
+                    agent1.reset()
+
+                    while True:
+                        step_actions = [agent1.step(timesteps[0])]
+                        if timesteps[0].last():
+                            break
+                        timesteps = env.step(step_actions)
     except KeyboardInterrupt:
         pass
 
