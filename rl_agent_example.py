@@ -263,18 +263,27 @@ class SmartAgent(Agent):
         can_afford_barracks = obs.observation.player.minerals >= 150
         can_afford_marine = obs.observation.player.minerals >= 100
 
-        enemy_scvs = self.get_enemy_units_by_type(obs, units.Terran.SCV)
-        enemy_idle_scvs = [scv for scv in enemy_scvs if scv.order_length == 0]
-        enemy_command_centers = self.get_enemy_units_by_type(
-            obs, units.Terran.CommandCenter)
-        enemy_supply_depots = self.get_enemy_units_by_type(
-            obs, units.Terran.SupplyDepot)
-        enemy_completed_supply_depots = self.get_enemy_completed_units_by_type(
-            obs, units.Terran.SupplyDepot)
-        enemy_barrackses = self.get_enemy_units_by_type(obs, units.Terran.Barracks)
-        enemy_completed_barrackses = self.get_enemy_completed_units_by_type(
-            obs, units.Terran.Barracks)
-        enemy_marines = self.get_enemy_units_by_type(obs, units.Terran.Marine)
+        enemy_drones = self.get_enemy_units_by_type(obs, units.Zerg.Drone)
+        enemy_idle_drone = [drone for drone in enemy_drones if drone.order_length == 0]
+        enemy_hatcheries = self.get_enemy_units_by_type(
+            obs, units.Zerg.Hatchery)
+        enemy_hatcheries.extend(self.get_enemy_units_by_type(obs, units.Zerg.Hive))
+        enemy_hatcheries.extend(self.get_enemy_units_by_type(obs, units.Zerg.Lair))
+        enemy_overlords = self.get_enemy_units_by_type(
+            obs, units.Zerg.Overlord)
+        enemy_overlords.extend(self.get_enemy_units_by_type(obs, units.Zerg.Overseer))
+        #enemy_completed_overlords = self.get_enemy_completed_units_by_type(
+        #    obs, units.Zerg.Overlord)
+        enemy_spawning_pool = self.get_enemy_units_by_type(obs, units.Zerg.SpawningPool)
+        enemy_roach_warren = self.get_enemy_units_by_type(obs, units.Zerg.RoachWarren)
+        enemy_hydralisk_den = self.get_enemy_units_by_type(obs, units.Zerg.HydraliskDen)
+        enemy_banelings_nest = self.get_enemy_units_by_type(obs, units.Zerg.BanelingNest)
+        #enemy_completed_spawning_pool = self.get_enemy_completed_units_by_type(
+        #    obs, units.Zerg.SpawningPool)
+        enemy_zerglings = self.get_enemy_units_by_type(obs, units.Zerg.Zergling)
+        enemy_banelings = self.get_enemy_units_by_type(obs, units.Zerg.Baneling)
+        enemy_hydralisks = self.get_enemy_units_by_type(obs, units.Zerg.Hydralisk)
+        enemy_roaches = self.get_enemy_units_by_type(obs, units.Zerg.Roach)
 
         return (len(command_centers),
                 len(scvs),
@@ -289,14 +298,20 @@ class SmartAgent(Agent):
                 can_afford_supply_depot,
                 can_afford_barracks,
                 can_afford_marine,
-                len(enemy_command_centers),
-                len(enemy_scvs),
-                len(enemy_idle_scvs),
-                len(enemy_supply_depots),
-                len(enemy_completed_supply_depots),
-                len(enemy_barrackses),
-                len(enemy_completed_barrackses),
-                len(enemy_marines))
+                len(enemy_hatcheries),
+                len(enemy_drones),
+                len(enemy_idle_drone),
+                len(enemy_overlords),
+                #len(enemy_completed_supply_depots),
+                len(enemy_spawning_pool),
+                len(enemy_hydralisk_den),
+                len(enemy_roach_warren),
+                len(enemy_banelings_nest),
+                #len(enemy_completed_barrackses),
+                len(enemy_zerglings),
+                len(enemy_banelings),
+                len(enemy_roaches),
+                len(enemy_hydralisks))
 
     def step(self, obs):
         super(SmartAgent, self).step(obs)
@@ -319,8 +334,9 @@ def main(unused_argv):
     gameCount = 0
     start_time = time.time()
     try:
-        while gameCount < 25:
+        while gameCount < 500:
             gameCount += 1
+            print("=========================GAME : " + str(gameCount) + "=========================")
             with sc2_env.SC2Env(
                     map_name="Simple64",
                     players=[sc2_env.Agent(sc2_env.Race.terran),
@@ -332,7 +348,7 @@ def main(unused_argv):
                         raw_resolution=64,
                         feature_dimensions=features.Dimensions(screen=84, minimap=64)),
                     step_mul=48,
-                    game_steps_per_episode=0,
+                    #game_steps_per_episode=0,
                     disable_fog=True,
                     visualize=True) as env:
 
@@ -342,7 +358,7 @@ def main(unused_argv):
                     agent1.reset()
 
                     while True:
-                        print(timestepszerg                    step_actions = [agent1.step(timesteps[0])]
+                        step_actions = [agent1.step(timesteps[0])]
                         if timesteps[0].last():
                             break
                         timesteps = env.step(step_actions)
@@ -351,7 +367,7 @@ def main(unused_argv):
         pass
     finally:
         elapsed_time = time.time() - start_time
-        print("Took %.3f seconds for %s steps: %.3f fps" % (
+        print("Took %.3f seconds" % (
             elapsed_time))
 
 if __name__ == "__main__":
