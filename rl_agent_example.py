@@ -41,16 +41,18 @@ class QLearningTable:
                                                          name=state))
 
 class Agent(base_agent.BaseAgent):
-    actions = ("do_nothing",
+    my_actions = ("do_nothing",
                "harvest_minerals",
-               #"harvest_vespene",
-               #"build_geyser",
+               "harvest_vespene",
+               "build_refinery",
                "build_supply_depot",
                "build_barracks",
                #"build_engineering_bay",
                "train_marine",
+               "train_scv",
                #"train_marauder",
-               "attack")
+               "attack",
+               "attack_all")
 
     def get_my_units_by_type(self, obs, unit_type):
         return [unit for unit in obs.observation.raw_units
@@ -73,6 +75,10 @@ class Agent(base_agent.BaseAgent):
                 if unit.unit_type == unit_type
                 and unit.build_progress == 100
                 and unit.alliance == features.PlayerRelative.ENEMY]
+
+    def get_enemy_units(self, obs):
+        return [unit for unit in obs.observation.raw_units
+                if unit.alliance == features.PlayerRelative.ENEMY]
 
     def get_distances(self, obs, units, xy):
         units_xy = [(unit.x, unit.y) for unit in units]
@@ -114,72 +120,107 @@ class Agent(base_agent.BaseAgent):
                 "now", scv.tag, mineral_patch.tag)
         return actions.RAW_FUNCTIONS.no_op()
 
-    def build_refinery(self, obs):
-        refinery = self.get_my_units_by_type(obs, units.Terran.Refinery)
-        scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
-        if (len(refinery) == 0 and obs.observation.player.minerals >= 75 and
-                len(scvs) > 0):
-            refinery_xy = (22, 26) if self.base_top_left else (35, 42)
-            distances = self.get_distances(obs, scvs, refinery_xy)
-            scv = scvs[np.argmin(distances)]
-            return actions.RAW_FUNCTIONS.Build_Refinery_pt(
-                "now", scv.tag, refinery_xy)
-        return actions.RAW_FUNCTIONS.no_op()
-
-    # Set a check to see if refinery is built. If not, build a refinery. If refinery is empty, build another refinery.
+    # How do we track if there are 3 scv gathering vespene? Is there a way to check vespene gather rate? Way to check if workers assigned to vespene?
     def harvest_vespene(self, obs):
         scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
         idle_scvs = [scv for scv in scvs if scv.order_length == 0]
-        if len(idle_scvs) > 0:
-            mineral_patches = [unit for unit in obs.observation.raw_units
-                               if unit.unit_type in [
-                                   units.Neutral.BattleStationMineralField,
-                                   units.Neutral.BattleStationMineralField750,
-                                   units.Neutral.LabMineralField,
-                                   units.Neutral.LabMineralField750,
-                                   units.Neutral.MineralField,
-                                   units.Neutral.MineralField750,
-                                   units.Neutral.PurifierMineralField,
-                                   units.Neutral.PurifierMineralField750,
-                                   units.Neutral.PurifierRichMineralField,
-                                   units.Neutral.PurifierRichMineralField750,
-                                   units.Neutral.RichMineralField,
-                                   units.Neutral.RichMineralField750
-                               ]]
+        refineries  = self.get_my_units_by_type(obs, units.Terran.Refinery)
+        if len(idle_scvs) > 0 and len(refineries) != 0:
+            refinery = refineries[0]
             scv = random.choice(idle_scvs)
-            distances = self.get_distances(obs, mineral_patches, (scv.x, scv.y))
-            mineral_patch = mineral_patches[np.argmin(distances)]
+            #distances = self.get_distances(obs, refinery, (scv.x, scv.y))
+            #mineral_patch = mineral_patches[np.argmin(distances)]
             return actions.RAW_FUNCTIONS.Harvest_Gather_unit(
-                "now", scv.tag, mineral_patch.tag)
+                "now", scv.tag, refinery.tag)
         return actions.RAW_FUNCTIONS.no_op()
 
     def build_supply_depot(self, obs):
         supply_depots = self.get_my_units_by_type(obs, units.Terran.SupplyDepot)
         scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
-        if (len(supply_depots) == 0 and obs.observation.player.minerals >= 100 and
+        free_supply = (obs.observation.player.food_cap -
+                       obs.observation.player.food_used)
+
+        # Always build at least 4 supply depots at designated position
+        if (len(supply_depots) < 4 and obs.observation.player.minerals >= 100 and
                 len(scvs) > 0):
-            supply_depot_xy = (22, 26) if self.base_top_left else (35, 42)
+            locations_top_left = [(22, 26), (22, 28), (20, 26), (20, 28)]  # (22, 21)
+            locations_bottom_right = [(35, 42), (35, 44), (33, 42), (33, 44)]
+            if self.base_top_left:
+                location = random.choice(locations_top_left)
+            else:
+                location = random.choice(locations_bottom_right)
+            print("LOCATION CHOSEN:", location)
+            supply_depot_xy = location
             distances = self.get_distances(obs, scvs, supply_depot_xy)
             scv = scvs[np.argmin(distances)]
             return actions.RAW_FUNCTIONS.Build_SupplyDepot_pt(
                 "now", scv.tag, supply_depot_xy)
+
+        # If supply is capped, build suppy depot at random position
+        elif free_supply == 0 and len(scvs) > 0 and obs.observation.player.minerals >=100:
+            supply_depot_xy = (random.randint(0, 83), random.randint(0, 83))
+            distances = self.get_distances(obs, scvs, supply_depot_xy)
+            scv = scvs[np.argmin(distances)]
+            return actions.RAW_FUNCTIONS.Build_SupplyDepot_pt(
+                "now", scv.tag, supply_depot_xy)
+
+
         return actions.RAW_FUNCTIONS.no_op()
 
     def build_refinery(self, obs):
-        pass
+        refinery = self.get_my_units_by_type(obs, units.Terran.Refinery)
+        scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
+        if (len(refinery) == 0 and obs.observation.player.minerals >= 75 and
+                len(scvs) > 0):
+            geysers = [unit for unit in obs.observation.raw_units
+                       if unit.unit_type in [
+                           units.Neutral.ProtossVespeneGeyser,
+                           units.Neutral.PurifierVespeneGeyser,
+                           units.Neutral.RichVespeneGeyser,
+                           units.Neutral.ShakurasVespeneGeyser,
+                           units.Neutral.SpacePlatformGeyser,
+                           units.Neutral.VespeneGeyser
+                       ]]
+            scv = random.choice(scvs)
+            distances = self.get_distances(obs, geysers, (scv.x, scv.y))
+            geyser = geysers[np.argmin(distances)]
+            return actions.RAW_FUNCTIONS.Build_Refinery_pt(
+                "now", scv.tag, geyser.tag)
+        return actions.RAW_FUNCTIONS.no_op()
 
     def build_barracks(self, obs):
         completed_supply_depots = self.get_my_completed_units_by_type(
             obs, units.Terran.SupplyDepot)
         barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
         scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
-        if (len(completed_supply_depots) > 0 and len(barrackses) == 0 and
+        if (len(completed_supply_depots) > 0 and len(barrackses) < 2 and
                 obs.observation.player.minerals >= 150 and len(scvs) > 0):
-            barracks_xy = (22, 21) if self.base_top_left else (35, 45)
+
+            if self.base_top_left:
+                locations = [(22, 21),(25,21)]
+            else:
+                locations = [(35, 47), (32, 47)]
+            barracks_xy = random.choice(locations)
+
+            print("BARRACK LOCATION CHOSEN :", barracks_xy)
+
             distances = self.get_distances(obs, scvs, barracks_xy)
             scv = scvs[np.argmin(distances)]
             return actions.RAW_FUNCTIONS.Build_Barracks_pt(
                 "now", scv.tag, barracks_xy)
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def train_scv(self, obs):
+        command_centers = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
+        command_centers.extend(self.get_my_units_by_type(obs, units.Terran.OrbitalCommand))
+        scv_count = len(self.get_my_units_by_type(obs, units.Terran.SCV))
+        free_supply = (obs.observation.player.food_cap -
+                       obs.observation.player.food_used)
+        if (len(command_centers) > 0 and obs.observation.player.minerals >= 100
+                and free_supply > 0 and scv_count < 19) :
+            command_center = command_centers[0]
+            if command_center.order_length < 5:
+                return actions.RAW_FUNCTIONS.Train_SCV_quick("now", command_center.tag)
         return actions.RAW_FUNCTIONS.no_op()
 
     def train_marine(self, obs):
@@ -189,9 +230,13 @@ class Agent(base_agent.BaseAgent):
                        obs.observation.player.food_used)
         if (len(completed_barrackses) > 0 and obs.observation.player.minerals >= 100
                 and free_supply > 0):
-            barracks = self.get_my_units_by_type(obs, units.Terran.Barracks)[0]
-            if barracks.order_length < 5:
-                return actions.RAW_FUNCTIONS.Train_Marine_quick("now", barracks.tag)
+            barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
+
+            if len(barrackses) == 2:
+                if barrackses[0].order_length < 5 or barrackses[1] < 5:
+                    return actions.RAW_FUNCTIONS.Train_Marine_quick("now", [barracks.tag for barracks in barrackses])
+            elif barrackses[0].order_length < 5:
+                return actions.RAW_FUNCTIONS.Train_Marine_quick("now", barrackses[0].tag)
         return actions.RAW_FUNCTIONS.no_op()
 
     def train_marauder(self, obs):
@@ -210,27 +255,54 @@ class Agent(base_agent.BaseAgent):
     def attack(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
-            attack_xy = (38, 44) if self.base_top_left else (19, 23)
+
+            # Maybe I should split attack locations and let the bot figure out where it is best to attack.
+            # That is, if I don't implement the closest enemy unit attack method
+            if self.base_top_left:
+                locations = [(40,44), (18,44), (40, 23)] # bottom right, bottom left, top right
+            else:
+                locations = [(18, 23), (40, 23), (18,44)] # top left, top right, bottom left
+            attack_xy = random.choice(locations)
             distances = self.get_distances(obs, marines, attack_xy)
             marine = marines[np.argmax(distances)]
+
+            #enemy_location = self.get_enemy_units(obs)
+
+
             x_offset = random.randint(-4, 4)
             y_offset = random.randint(-4, 4)
             return actions.RAW_FUNCTIONS.Attack_pt(
                 "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
+    def attack_all(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        if len(marines) > 10:
+            if self.base_top_left:
+                locations = [(40, 44), (18, 44), (40, 23)]  # bottom right, bottom left, top right
+            else:
+                locations = [(18, 23), (40, 23), (18, 44)]  # top left, top right, bottom left
+            attack_xy = random.choice(locations)
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            marines = [marine.tag for marine in marines]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+
 
 class RandomAgent(Agent):
     def step(self, obs):
         super(RandomAgent, self).step(obs)
-        action = random.choice(self.actions)
+        action = random.choice(self.my_actions)
         return getattr(self, action)(obs)
 
 
 class SmartAgent(Agent):
     def __init__(self):
         super(SmartAgent, self).__init__()
-        self.qtable = QLearningTable(self.actions)
+        self.qtable = QLearningTable(self.my_actions)
         self.new_game()
 
     def reset(self):
@@ -262,6 +334,7 @@ class SmartAgent(Agent):
         can_afford_supply_depot = obs.observation.player.minerals >= 100
         can_afford_barracks = obs.observation.player.minerals >= 150
         can_afford_marine = obs.observation.player.minerals >= 100
+        can_afford_refinery = obs.observation.player.minerals >= 75
 
         enemy_drones = self.get_enemy_units_by_type(obs, units.Zerg.Drone)
         enemy_idle_drone = [drone for drone in enemy_drones if drone.order_length == 0]
@@ -272,18 +345,23 @@ class SmartAgent(Agent):
         enemy_overlords = self.get_enemy_units_by_type(
             obs, units.Zerg.Overlord)
         enemy_overlords.extend(self.get_enemy_units_by_type(obs, units.Zerg.Overseer))
-        #enemy_completed_overlords = self.get_enemy_completed_units_by_type(
+        # enemy_completed_overlords = self.get_enemy_completed_units_by_type(
         #    obs, units.Zerg.Overlord)
         enemy_spawning_pool = self.get_enemy_units_by_type(obs, units.Zerg.SpawningPool)
         enemy_roach_warren = self.get_enemy_units_by_type(obs, units.Zerg.RoachWarren)
         enemy_hydralisk_den = self.get_enemy_units_by_type(obs, units.Zerg.HydraliskDen)
         enemy_banelings_nest = self.get_enemy_units_by_type(obs, units.Zerg.BanelingNest)
-        #enemy_completed_spawning_pool = self.get_enemy_completed_units_by_type(
+        # enemy_completed_spawning_pool = self.get_enemy_completed_units_by_type(
         #    obs, units.Zerg.SpawningPool)
         enemy_zerglings = self.get_enemy_units_by_type(obs, units.Zerg.Zergling)
         enemy_banelings = self.get_enemy_units_by_type(obs, units.Zerg.Baneling)
         enemy_hydralisks = self.get_enemy_units_by_type(obs, units.Zerg.Hydralisk)
         enemy_roaches = self.get_enemy_units_by_type(obs, units.Zerg.Roach)
+        enemy_queens = self.get_my_units_by_type(obs, units.Zerg.Queen)
+
+        enemy_air = self.get_enemy_units_by_type(obs, units.Zerg.Mutalisk)
+        enemy_air.extend(self.get_enemy_units_by_type(obs, units.Zerg.BroodLord))
+        enemy_air.extend(self.get_enemy_units_by_type(obs, units.Zerg.Corruptor))
 
         return (len(command_centers),
                 len(scvs),
@@ -298,20 +376,23 @@ class SmartAgent(Agent):
                 can_afford_supply_depot,
                 can_afford_barracks,
                 can_afford_marine,
+                can_afford_refinery,
                 len(enemy_hatcheries),
                 len(enemy_drones),
                 len(enemy_idle_drone),
                 len(enemy_overlords),
-                #len(enemy_completed_supply_depots),
+                # len(enemy_completed_supply_depots),
                 len(enemy_spawning_pool),
                 len(enemy_hydralisk_den),
                 len(enemy_roach_warren),
                 len(enemy_banelings_nest),
-                #len(enemy_completed_barrackses),
+                # len(enemy_completed_barrackses),
                 len(enemy_zerglings),
                 len(enemy_banelings),
                 len(enemy_roaches),
-                len(enemy_hydralisks))
+                len(enemy_hydralisks),
+                len(enemy_queens),
+                len(enemy_air))
 
     def step(self, obs):
         super(SmartAgent, self).step(obs)
