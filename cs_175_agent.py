@@ -42,17 +42,35 @@ class QLearningTable:
 
 class Agent(base_agent.BaseAgent):
     my_actions = ("do_nothing",
-               "harvest_minerals",
-               "harvest_vespene",
-               "build_refinery",
-               "build_supply_depot",
-               "build_barracks",
-               #"build_engineering_bay",
-               "train_marine",
-               "train_scv",
-               #"train_marauder",
-               "attack",
-               "attack_all")
+                  "harvest_minerals",
+                  "harvest_vespene",
+                  "build_refinery",
+                  "build_supply_depot",
+                  "build_barracks",
+                  #"build_expansion",
+                  "build_tech_lab",
+                  #"build_engineering_bay",
+                  "train_marine",
+                  "train_scv",
+                  "train_marauder",
+                  "attack",
+                  "attack_expansion1",
+                  "attack_expansion2",
+                  "attack_all",
+                  "attack_all_expansion1",
+                  "attack_all_expansion2")#,
+                  #"attack_marine",
+                  #"attack_marine_expansion1",
+                  #"attack_marine_expansion2",
+                  #"attack_marine_all",
+                  #"attack_marine_all_expansion1",
+                  #"attack_marine_all_expansion2",
+                  #"attack_marauder",
+                  #"attack_marauder_expansion1",
+                  #"attack_marauder_expansion2",
+                  #"attack_marauder_all",
+                  #"attack_marauder_all_expansion1",
+                  #"attack_marauder_all_expansion2")
 
     def get_my_units_by_type(self, obs, unit_type):
         return [unit for unit in obs.observation.raw_units
@@ -113,6 +131,7 @@ class Agent(base_agent.BaseAgent):
                                    units.Neutral.RichMineralField,
                                    units.Neutral.RichMineralField750
                                ]]
+
             scv = random.choice(idle_scvs)
             distances = self.get_distances(obs, mineral_patches, (scv.x, scv.y))
             mineral_patch = mineral_patches[np.argmin(distances)]
@@ -128,10 +147,29 @@ class Agent(base_agent.BaseAgent):
         if len(idle_scvs) > 0 and len(refineries) != 0:
             refinery = refineries[0]
             scv = random.choice(idle_scvs)
-            #distances = self.get_distances(obs, refinery, (scv.x, scv.y))
-            #mineral_patch = mineral_patches[np.argmin(distances)]
             return actions.RAW_FUNCTIONS.Harvest_Gather_unit(
                 "now", scv.tag, refinery.tag)
+        return actions.RAW_FUNCTIONS.no_op()
+
+# BUILD ACTIONS #######################################################################################################################
+
+    def build_expansion(self, obs):
+        scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
+        command_centers = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
+
+        if len(command_centers) < 2 and obs.observation.player.minerals >= 150 and len(scvs) > 0:
+
+            if self.base_top_left:
+                locations = [(44,22),(44,21),(44,20),(44,19),(45,18),(45,19),(45,20),(45,21)]
+            else:
+                locations = [(14,47),(15,47),(15,48),(16,47),(16,48),(18,50)]#(17,48)
+
+            expansion_location = random.choice(locations)
+            print("EXPANSION LOCATION:",expansion_location)
+            distances = self.get_distances(obs, scvs, expansion_location)
+            scv = scvs[np.argmin(distances)]
+            return actions.RAW_FUNCTIONS.Build_CommandCenter_pt(
+                "now", scv.tag, expansion_location)
         return actions.RAW_FUNCTIONS.no_op()
 
     def build_supply_depot(self, obs):
@@ -149,7 +187,7 @@ class Agent(base_agent.BaseAgent):
                 location = random.choice(locations_top_left)
             else:
                 location = random.choice(locations_bottom_right)
-            print("LOCATION CHOSEN:", location)
+            #print("LOCATION CHOSEN:", location)
             supply_depot_xy = location
             distances = self.get_distances(obs, scvs, supply_depot_xy)
             scv = scvs[np.argmin(distances)]
@@ -202,13 +240,34 @@ class Agent(base_agent.BaseAgent):
                 locations = [(35, 47), (32, 47)]
             barracks_xy = random.choice(locations)
 
-            print("BARRACK LOCATION CHOSEN :", barracks_xy)
+            #print("BARRACK LOCATION CHOSEN :", barracks_xy)
 
             distances = self.get_distances(obs, scvs, barracks_xy)
             scv = scvs[np.argmin(distances)]
             return actions.RAW_FUNCTIONS.Build_Barracks_pt(
                 "now", scv.tag, barracks_xy)
         return actions.RAW_FUNCTIONS.no_op()
+
+    def build_tech_lab(self, obs):
+        completed_barracks = self.get_my_completed_units_by_type(
+            obs, units.Terran.Barracks)
+
+        tech_labs = self.get_my_units_by_type(obs, units.Terran.BarracksTechLab)
+        #scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
+        if (len(completed_barracks) > 0 and len(tech_labs) < 2 and
+                obs.observation.player.minerals >= 100 and obs.observation.player.vespene >= 50):
+
+            if self.base_top_left:
+                locations = [(22, 21), (25, 21)]
+            else:
+                locations = [(35, 47), (32, 47)]
+            barracks = random.choice(self.get_my_units_by_type(obs, units.Terran.Barracks))
+
+            return actions.RAW_FUNCTIONS.Build_TechLab_Barracks_quick(
+                "now", barracks.tag)
+        return actions.RAW_FUNCTIONS.no_op()
+
+# TRAIN ACTIONS #######################################################################################################################
 
     def train_scv(self, obs):
         command_centers = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
@@ -218,7 +277,7 @@ class Agent(base_agent.BaseAgent):
                        obs.observation.player.food_used)
         if (len(command_centers) > 0 and obs.observation.player.minerals >= 100
                 and free_supply > 0 and scv_count < 19) :
-            command_center = command_centers[0]
+            command_center = random.choice(command_centers)
             if command_center.order_length < 5:
                 return actions.RAW_FUNCTIONS.Train_SCV_quick("now", command_center.tag)
         return actions.RAW_FUNCTIONS.no_op()
@@ -246,28 +305,184 @@ class Agent(base_agent.BaseAgent):
                        obs.observation.player.food_used)
         if (len(completed_barrackses) > 0 and obs.observation.player.minerals >= 100
                 and obs.observation.player.vespene >= 25
-                and free_supply > 0):
+                and free_supply > 2):
             barracks = self.get_my_units_by_type(obs, units.Terran.Barracks)[0]
             if barracks.order_length < 5:
                 return actions.RAW_FUNCTIONS.Train_Marauder_quick("now", barracks.tag)
         return actions.RAW_FUNCTIONS.no_op()
 
+# ATTACK ACTIONS #######################################################################################################################
+
+    def attack(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marines) > 0 or len(marauders) > 0:
+            attack_xy = (40,44) if self.base_top_left else (18, 23)
+            army = []
+
+            if len(marines) > 0:
+                army.extend(marines)
+            if len(marauders) > 0:
+                army.extend(marauders)
+            distances = self.get_distances(obs, army, attack_xy)
+            unit = army[np.argmax(distances)]
+            #enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", unit.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_expansion1(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marines) > 0 or len(marauders) > 0:
+            attack_xy = (18,44) if self.base_top_left else (40,23)
+            army = []
+
+            if len(marines) > 0:
+                army.extend(marines)
+            if len(marauders) > 0:
+                army.extend(marauders)
+            distances = self.get_distances(obs, army, attack_xy)
+            unit = army[np.argmax(distances)]
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", unit.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_expansion2(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marines) > 0 or len(marauders) > 0:
+            attack_xy = (40, 23) if self.base_top_left else (18,44)
+            army = []
+
+            if len(marines) > 0:
+                army.extend(marines)
+            if len(marauders) > 0:
+                army.extend(marauders)
+            distances = self.get_distances(obs, army, attack_xy)
+            unit = army[np.argmax(distances)]
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", unit.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_all(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marines) > 0 or len(marauders) > 0:
+            attack_xy = (40, 44) if self.base_top_left else (18, 23)
+            # enemy_location = self.get_enemy_units(obs)
+            army = []
+
+            if len(marines) > 0:
+                army.extend(marines)
+            if len(marauders) > 0:
+                army.extend(marauders)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            army = [unit.tag for unit in army]
+            random.shuffle(army)
+            army = army[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", army, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_all_expansion1(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marines) > 0:
+            attack_xy = (18, 44) if self.base_top_left else (40, 23)
+            army = []
+
+            if len(marines) > 0:
+                army.extend(marines)
+            if len(marauders) > 0:
+                army.extend(marauders)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            army = [unit.tag for unit in army]
+            random.shuffle(army)
+            army = army[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", army, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_all_expansion2(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marines) > 0:
+            attack_xy = (40, 23) if self.base_top_left else (18, 44)
+            army = []
+
+            if len(marines) > 0:
+                army.extend(marines)
+            if len(marauders) > 0:
+                army.extend(marauders)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            army = [unit.tag for unit in army]
+            random.shuffle(army)
+            army = army[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", army, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    '''
+
     def attack(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
-
-            # Maybe I should split attack locations and let the bot figure out where it is best to attack.
-            # That is, if I don't implement the closest enemy unit attack method
-            if self.base_top_left:
-                locations = [(40,44), (18,44), (40, 23)] # bottom right, bottom left, top right
-            else:
-                locations = [(18, 23), (40, 23), (18,44)] # top left, top right, bottom left
-            attack_xy = random.choice(locations)
+            attack_xy = (40,44) if self.base_top_left else (18, 23)
             distances = self.get_distances(obs, marines, attack_xy)
             marine = marines[np.argmax(distances)]
 
             #enemy_location = self.get_enemy_units(obs)
 
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_expansion1(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        if len(marines) > 0:
+            attack_xy = (18,44) if self.base_top_left else (40,23)
+            distances = self.get_distances(obs, marines, attack_xy)
+            marine = marines[np.argmax(distances)]
+
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_expansion2(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        if len(marines) > 0:
+            attack_xy = (40, 23) if self.base_top_left else (18,44)
+            distances = self.get_distances(obs, marines, attack_xy)
+            marine = marines[np.argmax(distances)]
+
+            # enemy_location = self.get_enemy_units(obs)
 
             x_offset = random.randint(-4, 4)
             y_offset = random.randint(-4, 4)
@@ -277,19 +492,55 @@ class Agent(base_agent.BaseAgent):
 
     def attack_all(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-        if len(marines) > 10:
-            if self.base_top_left:
-                locations = [(40, 44), (18, 44), (40, 23)]  # bottom right, bottom left, top right
-            else:
-                locations = [(18, 23), (40, 23), (18, 44)]  # top left, top right, bottom left
-            attack_xy = random.choice(locations)
+        if len(marines) > 0:
+            attack_xy = (40, 44) if self.base_top_left else (18, 23)
+            distances = self.get_distances(obs, marines, attack_xy)
+            # enemy_location = self.get_enemy_units(obs)
+
             x_offset = random.randint(-4, 4)
             y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
             marines = [marine.tag for marine in marines]
+            random.shuffle(marines)
+            marines = marines[:11]
             return actions.RAW_FUNCTIONS.Attack_pt(
                 "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
+    def attack_all_expansion1(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        if len(marines) > 0:
+            attack_xy = (18, 44) if self.base_top_left else (40, 23)
+            distances = self.get_distances(obs, marines, attack_xy)
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            marines = [marine.tag for marine in marines]
+            random.shuffle(marines)
+            marines = marines[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_all_expansion2(self, obs):
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        if len(marines) > 0:
+            attack_xy = (40, 23) if self.base_top_left else (18, 44)
+            distances = self.get_distances(obs, marines, attack_xy)
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            marines = [marine.tag for marine in marines]
+            random.shuffle(marines)
+            marines = marines[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+'''
 
 
 class RandomAgent(Agent):
@@ -317,6 +568,7 @@ class SmartAgent(Agent):
     def get_state(self, obs):
         scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
         idle_scvs = [scv for scv in scvs if scv.order_length == 0]
+
         command_centers = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
         supply_depots = self.get_my_units_by_type(obs, units.Terran.SupplyDepot)
         completed_supply_depots = self.get_my_completed_units_by_type(
@@ -324,9 +576,17 @@ class SmartAgent(Agent):
         barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
         completed_barrackses = self.get_my_completed_units_by_type(
             obs, units.Terran.Barracks)
+        refineries = self.get_my_units_by_type(obs, units.Terran.Refinery)
+        completed_refineries = self.get_my_completed_units_by_type(obs, units.Terran.Refinery)
+
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
 
         queued_marines = (completed_barrackses[0].order_length
+                          if len(completed_barrackses) > 0 else 0)
+
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+
+        queued_maruders = (completed_barrackses[0].order_length
                           if len(completed_barrackses) > 0 else 0)
 
         free_supply = (obs.observation.player.food_cap -
@@ -334,6 +594,7 @@ class SmartAgent(Agent):
         can_afford_supply_depot = obs.observation.player.minerals >= 100
         can_afford_barracks = obs.observation.player.minerals >= 150
         can_afford_marine = obs.observation.player.minerals >= 100
+        can_afford_marauder = obs.observation.player.minerals >= 100 and obs.observation.player.vespene >= 50
         can_afford_refinery = obs.observation.player.minerals >= 75
 
         enemy_drones = self.get_enemy_units_by_type(obs, units.Zerg.Drone)
@@ -367,15 +628,20 @@ class SmartAgent(Agent):
                 len(scvs),
                 len(idle_scvs),
                 len(supply_depots),
+                len(refineries),
+                len(completed_refineries),
                 len(completed_supply_depots),
                 len(barrackses),
                 len(completed_barrackses),
                 len(marines),
+                len(marauders),
                 queued_marines,
+                queued_maruders,
                 free_supply,
                 can_afford_supply_depot,
                 can_afford_barracks,
                 can_afford_marine,
+                can_afford_marauder,
                 can_afford_refinery,
                 len(enemy_hatcheries),
                 len(enemy_drones),
@@ -410,40 +676,22 @@ class SmartAgent(Agent):
 
 def main(unused_argv):
     agent1 = SmartAgent()
-    agent2 = sc2_env.Bot(sc2_env.Race.zerg,
-                               sc2_env.Difficulty.very_easy)#RandomAgent()
-    gameCount = 0
+    agent2 = sc2_env.Bot(sc2_env.Race.zerg,sc2_env.Difficulty.very_easy)#RandomAgent()
     start_time = time.time()
     try:
-        while gameCount < 500:
-            gameCount += 1
-            print("=========================GAME : " + str(gameCount) + "=========================")
-            with sc2_env.SC2Env(
-                    map_name="Simple64",
-                    players=[sc2_env.Agent(sc2_env.Race.terran),
-                            agent2],
-
-                    agent_interface_format=features.AgentInterfaceFormat(
-                        action_space=actions.ActionSpace.RAW,
-                        use_raw_units=True,
-                        raw_resolution=64,
-                        feature_dimensions=features.Dimensions(screen=84, minimap=64)),
-                    step_mul=48,
-                    #game_steps_per_episode=0,
-                    disable_fog=True,
-                    visualize=True) as env:
-
-                    agent1.setup(env.observation_spec(), env.action_spec())
-
-                    timesteps = env.reset()
-                    agent1.reset()
-
-                    while True:
-                        step_actions = [agent1.step(timesteps[0])]
-                        if timesteps[0].last():
-                            break
-                        timesteps = env.step(step_actions)
-
+        with sc2_env.SC2Env(
+                map_name="Simple64",
+                players=[sc2_env.Agent(sc2_env.Race.terran),
+                         agent2],
+                agent_interface_format=features.AgentInterfaceFormat(
+                    action_space=actions.ActionSpace.RAW,
+                    use_raw_units=True,
+                    raw_resolution=64,
+                ),
+                step_mul=48,
+                disable_fog=True,
+        ) as env:
+            run_loop.run_loop([agent1], env, max_episodes=1000)
     except KeyboardInterrupt:
         pass
     finally:
@@ -453,64 +701,3 @@ def main(unused_argv):
 
 if __name__ == "__main__":
     app.run(main)
-
-'''
-def run_loop(agents, env, max_frames=0, max_episodes=0):
-  """A run loop to have agents and an environment interact."""
-  total_frames = 0
-  total_episodes = 0
-  start_time = time.time()
-
-  observation_spec = env.observation_spec()
-  action_spec = env.action_spec()
-  for agent, obs_spec, act_spec in zip(agents, observation_spec, action_spec):
-    agent.setup(obs_spec, act_spec)
-
-  try:
-    while not max_episodes or total_episodes < max_episodes:
-      total_episodes += 1
-      timesteps = env.reset()
-      for a in agents:
-        a.reset()
-      while True:
-        total_frames += 1
-        actions = [agent.step(timestep)
-                   for agent, timestep in zip(agents, timesteps)]
-        if max_frames and total_frames >= max_frames:
-          return
-        if timesteps[0].last():
-          break
-        timesteps = env.step(actions)
-  except KeyboardInterrupt:
-    pass
-  finally:
-    elapsed_time = time.time() - start_time
-    print("Took %.3f seconds for %s steps: %.3f fps" % (
-        elapsed_time, total_frames, total_frames / elapsed_time))
-'''
-
-'''
-class BaseAgent(object):
-  """A base agent to write custom scripted agents.
-  It can also act as a passive agent that does nothing but no-ops.
-  """
-
-  def __init__(self):
-    self.reward = 0
-    self.episodes = 0
-    self.steps = 0
-    self.obs_spec = None
-    self.action_spec = None
-
-  def setup(self, obs_spec, action_spec):
-    self.obs_spec = obs_spec
-    self.action_spec = action_spec
-
-  def reset(self):
-    self.episodes += 1
-
-  def step(self, obs):
-    self.steps += 1
-    self.reward += obs.reward
-    return actions.FunctionCall(actions.FUNCTIONS.no_op.id, [])
-'''
