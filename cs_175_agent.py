@@ -292,7 +292,7 @@ class Agent(base_agent.BaseAgent):
             barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
 
             if len(barrackses) == 2:
-                if barrackses[0].order_length < 5 or barrackses[1] < 5:
+                if barrackses[0].order_length < 5 or barrackses[1].order_length < 5:
                     return actions.RAW_FUNCTIONS.Train_Marine_quick("now", [barracks.tag for barracks in barrackses])
             elif barrackses[0].order_length < 5:
                 return actions.RAW_FUNCTIONS.Train_Marine_quick("now", barrackses[0].tag)
