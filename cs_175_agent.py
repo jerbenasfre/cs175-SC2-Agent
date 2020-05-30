@@ -15,24 +15,24 @@ class QLearningTable:
         self.reward_decay = reward_decay
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64)
 
-    def choose_action(self, observation, e_greedy=0.9):
+    def choose_action(self, observation, e_greedy=0.75):# Change from .9 to .75
         self.check_state_exist(observation)
         if np.random.uniform() < e_greedy:
-            state_action = self.q_table.loc[observation, :]
+            state_action = self.q_table.loc[observation, :]# Get current state and associated action: reward values for that state
             action = np.random.choice(
-                state_action[state_action == np.max(state_action)].index)
+                state_action[state_action == np.max(state_action)].index)# Choose the highest rewarding action for this state(randomly select if ties)
         else:
             action = np.random.choice(self.actions)
         return action
 
     def learn(self, s, a, r, s_):
         self.check_state_exist(s_)
-        q_predict = self.q_table.loc[s, a]
+        q_predict = self.q_table.loc[s, a]# Get previous state and previous action
         if s_ != 'terminal':
-            q_target = r + self.reward_decay * self.q_table.loc[s_, :].max()
+            q_target = r + self.reward_decay * self.q_table.loc[s_, :].max()# Get current state and action with maximum value?
         else:
             q_target = r
-        self.q_table.loc[s, a] += self.learning_rate * (q_target - q_predict)
+        self.q_table.loc[s, a] += self.learning_rate * (q_target - q_predict)# Assign new reward to action
 
     def check_state_exist(self, state):
         if state not in self.q_table.index:
@@ -58,19 +58,20 @@ class Agent(base_agent.BaseAgent):
                   "attack_expansion2",
                   "attack_all",
                   "attack_all_expansion1",
-                  "attack_all_expansion2")#,
-                  #"attack_marine",
-                  #"attack_marine_expansion1",
-                  #"attack_marine_expansion2",
-                  #"attack_marine_all",
-                  #"attack_marine_all_expansion1",
-                  #"attack_marine_all_expansion2",
-                  #"attack_marauder",
-                  #"attack_marauder_expansion1",
-                  #"attack_marauder_expansion2",
-                  #"attack_marauder_all",
-                  #"attack_marauder_all_expansion1",
-                  #"attack_marauder_all_expansion2")
+                  "attack_all_expansion2",
+                  "attack_marine",
+                  "attack_marine_expansion1",
+                  "attack_marine_expansion2",
+                  "attack_marine_all",
+                  "attack_marine_all_expansion1",
+                  "attack_marine_all_expansion2",
+                  "attack_marauder",
+                  "attack_marauder_expansion1",
+                  "attack_marauder_expansion2",
+                  "attack_marauder_all",
+                  "attack_marauder_all_expansion1",
+                  "attack_marauder_all_expansion2")
+    episodeCount = 1
 
     def get_my_units_by_type(self, obs, unit_type):
         return [unit for unit in obs.observation.raw_units
@@ -292,7 +293,7 @@ class Agent(base_agent.BaseAgent):
             barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
 
             if len(barrackses) == 2:
-                if barrackses[0].order_length < 5 or barrackses[1] < 5:
+                if barrackses[0].order_length < 5 or barrackses[1].order_length < 5:
                     return actions.RAW_FUNCTIONS.Train_Marine_quick("now", [barracks.tag for barracks in barrackses])
             elif barrackses[0].order_length < 5:
                 return actions.RAW_FUNCTIONS.Train_Marine_quick("now", barrackses[0].tag)
@@ -306,9 +307,16 @@ class Agent(base_agent.BaseAgent):
         if (len(completed_barrackses) > 0 and obs.observation.player.minerals >= 100
                 and obs.observation.player.vespene >= 25
                 and free_supply > 2):
-            barracks = self.get_my_units_by_type(obs, units.Terran.Barracks)[0]
-            if barracks.order_length < 5:
-                return actions.RAW_FUNCTIONS.Train_Marauder_quick("now", barracks.tag)
+            barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
+
+            # Make a check for techlab
+            #barrackses
+
+            if len(barrackses) == 2:
+                if barrackses[0].order_length < 5 or barrackses[1].order_length < 5:
+                    return actions.RAW_FUNCTIONS.Train_Marauder_quick("now", [barracks.tag for barracks in barrackses])
+            elif barrackses[0].order_length < 5:
+                return actions.RAW_FUNCTIONS.Train_Marauder_quick("now", barrackses[0].tag)
         return actions.RAW_FUNCTIONS.no_op()
 
 # ATTACK ACTIONS #######################################################################################################################
@@ -443,9 +451,7 @@ class Agent(base_agent.BaseAgent):
                 "now", army, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-    '''
-
-    def attack(self, obs):
+    def attack_marine(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
             attack_xy = (40,44) if self.base_top_left else (18, 23)
@@ -460,7 +466,7 @@ class Agent(base_agent.BaseAgent):
                 "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-    def attack_expansion1(self, obs):
+    def attack_marine_expansion1(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
             attack_xy = (18,44) if self.base_top_left else (40,23)
@@ -475,7 +481,7 @@ class Agent(base_agent.BaseAgent):
                 "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-    def attack_expansion2(self, obs):
+    def attack_marine_expansion2(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
             attack_xy = (40, 23) if self.base_top_left else (18,44)
@@ -490,7 +496,7 @@ class Agent(base_agent.BaseAgent):
                 "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-    def attack_all(self, obs):
+    def attack_marine_all(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
             attack_xy = (40, 44) if self.base_top_left else (18, 23)
@@ -507,7 +513,7 @@ class Agent(base_agent.BaseAgent):
                 "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-    def attack_all_expansion1(self, obs):
+    def attack_marine_all_expansion1(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
             attack_xy = (18, 44) if self.base_top_left else (40, 23)
@@ -524,7 +530,7 @@ class Agent(base_agent.BaseAgent):
                 "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-    def attack_all_expansion2(self, obs):
+    def attack_marine_all_expansion2(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
             attack_xy = (40, 23) if self.base_top_left else (18, 44)
@@ -540,7 +546,99 @@ class Agent(base_agent.BaseAgent):
             return actions.RAW_FUNCTIONS.Attack_pt(
                 "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
-'''
+
+    def attack_marauder(self, obs):
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marauders) > 0:
+            attack_xy = (40,44) if self.base_top_left else (18, 23)
+            distances = self.get_distances(obs, marauders, attack_xy)
+            marauder = marauders[np.argmax(distances)]
+
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marauder.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_marauder_expansion1(self, obs):
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marauders) > 0:
+            attack_xy = (18,44) if self.base_top_left else (40,23)
+            distances = self.get_distances(obs, marauders, attack_xy)
+            marauder = marauders[np.argmax(distances)]
+
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marauder.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_marauder_expansion2(self, obs):
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marauders) > 0:
+            attack_xy = (40, 23) if self.base_top_left else (18,44)
+            distances = self.get_distances(obs, marauders, attack_xy)
+            marauder = marauders[np.argmax(distances)]
+
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marauder.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_marauder_all(self, obs):
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marauders) > 0:
+            attack_xy = (40, 44) if self.base_top_left else (18, 23)
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            marauders = [marauder.tag for marauder in marauders]
+            random.shuffle(marauders)
+            marauders = marauders[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marauders, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_marauder_all_expansion1(self, obs):
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marauders) > 0:
+            attack_xy = (18, 44) if self.base_top_left else (40, 23)
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            marauders = [marauder.tag for marauder in marauders]
+            random.shuffle(marauders)
+            marauders =marauders[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marauders, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
+
+    def attack_marauder_all_expansion2(self, obs):
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        if len(marauders) > 0:
+            attack_xy = (40, 23) if self.base_top_left else (18, 44)
+            # enemy_location = self.get_enemy_units(obs)
+
+            x_offset = random.randint(-4, 4)
+            y_offset = random.randint(-4, 4)
+            # Only get 10 marines, randomly selected
+            marauders = [marauder.tag for marauder in marauders]
+            random.shuffle(marauders)
+            marauders = marauders[:11]
+            return actions.RAW_FUNCTIONS.Attack_pt(
+                "now", marauders, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
+        return actions.RAW_FUNCTIONS.no_op()
 
 
 class RandomAgent(Agent):
@@ -599,8 +697,13 @@ class SmartAgent(Agent):
 
         enemy_drones = self.get_enemy_units_by_type(obs, units.Zerg.Drone)
         enemy_idle_drone = [drone for drone in enemy_drones if drone.order_length == 0]
-        enemy_hatcheries = self.get_enemy_units_by_type(
-            obs, units.Zerg.Hatchery)
+        enemy_hatcheries = self.get_enemy_units_by_type(obs, units.Zerg.Hatchery)
+
+        enemy_expanded = False
+
+        if len(enemy_hatcheries) > 1:
+            enemy_expanded = True
+
         enemy_hatcheries.extend(self.get_enemy_units_by_type(obs, units.Zerg.Hive))
         enemy_hatcheries.extend(self.get_enemy_units_by_type(obs, units.Zerg.Lair))
         enemy_overlords = self.get_enemy_units_by_type(
@@ -643,6 +746,7 @@ class SmartAgent(Agent):
                 can_afford_marine,
                 can_afford_marauder,
                 can_afford_refinery,
+                enemy_expanded,
                 len(enemy_hatcheries),
                 len(enemy_drones),
                 len(enemy_idle_drone),
@@ -664,6 +768,46 @@ class SmartAgent(Agent):
         super(SmartAgent, self).step(obs)
         state = str(self.get_state(obs))
         action = self.qtable.choose_action(state)
+
+        if obs.last():
+            marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+            marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+            scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
+            command_centers = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
+            barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
+            supply_depots = self.get_my_units_by_type(obs, units.Terran.SupplyDepot)
+            refineries = self.get_my_units_by_type(obs, units.Terran.Refinery)
+            tech_labs = self.get_my_units_by_type(obs, units.Terran.BarracksTechLab)
+
+            minerals = obs.observation.player.minerals
+            vespene = obs.observation.player.vespene
+
+            print("LAST OBSERVATION")
+            print("Writing QTable to file episode_"+str(self.episodeCount))
+
+            # CHANGE DIRECTORY NAME
+            self.qtable.q_table.to_csv(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
+            #file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".txt", "w")
+            #file.write(self.qtable.q_table)
+            #file.close()
+            self.episodeCount += 1
+            #print("State:")
+            #print("#CC #SCV #IdleSCV #SupplyDepots #Refineries #CompletedRefineries #CompletedSupplyDepots #Barrackses #CompletedBarrackses #Marines #Marauders QueuedMarines QueuedMarauders  FreeSupply CanAffordSuppyDepot CanAffordBarracks CanAffordMarine CanAffordMarauder CanAffordRefinery #Hatcheries #Drones #IdleDrones #Overlords #SpawningPools #HyrdaDen #RoachWarren #BanelingNest #Zergling #Banelings #Roaches #Hydralisk #Queens #Air")
+            #print(self.qtable.q_table)
+
+            print("======================================================")
+            print("Marines Alive:", len(marines))
+            print("Marauders Alive:", len(marauders))
+            print("SCVS Alive:", len(scvs))
+            print("Command Centers Up:", len(command_centers))
+            print("Supply Depots Up:", len(supply_depots))
+            print("Refineries Up:", len(refineries))
+            print("Barrackses Up:", len(barrackses))
+            print("Tech Labs Up:", len(tech_labs))
+            print("Minerals:", minerals)
+            print("Vespene:", vespene)
+
+
         if self.previous_action is not None:
             self.qtable.learn(self.previous_state,
                               self.previous_action,
@@ -700,4 +844,8 @@ def main(unused_argv):
             elapsed_time))
 
 if __name__ == "__main__":
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', None)
+    pd.set_option('display.max_colwidth', -1)
     app.run(main)
