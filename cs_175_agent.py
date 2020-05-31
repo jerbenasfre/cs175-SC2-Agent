@@ -8,6 +8,11 @@ from pysc2.lib import actions, features, units
 from pysc2.env import sc2_env, run_loop
 import time
 
+import matplotlib.pyplot as plt
+
+Q_TABLE_PATH = 'q_table.csv'
+LOG_PATH = 'log.txt'
+
 class QLearningTable:
     def __init__(self, actions, learning_rate=0.01, reward_decay=0.9):
         self.actions = actions
@@ -736,6 +741,8 @@ class SmartAgent(Agent):
         self.qtable = QLearningTable(self.my_actions)
         self.new_game()
 
+        self.n_games_played = 0
+
     def reset(self):
         super(SmartAgent, self).reset()
         self.new_game()
@@ -899,16 +906,21 @@ class SmartAgent(Agent):
             vespene = obs.observation.player.vespene
 
             print("LAST OBSERVATION")
-            print("Writing QTable to file episode_"+str(self.episodeCount))
+            # print("Writing QTable to file episode_"+str(self.episodeCount))
+            print("Writing QTable to file", Q_TABLE_PATH)
 
             # CHANGE DIRECTORY NAME
-            self.qtable.q_table.to_csv(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
+            # self.qtable.q_table.to_csv(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
+            self.qtable.q_table.to_csv(Q_TABLE_PATH, encoding = 'utf-8', index = False)
 
-            print("Writing state to file episode_"+str(self.episodeCount)+"state.txt")
-            file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+"state.txt", "w")
+            # print("Writing state to file episode_"+str(self.episodeCount)+"state.txt")
+            print("Writing state to file", LOG_PATH)
+            
+            # file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+"state.txt", "w")
+            file = open(LOG_PATH, "w")
             file.write("#CC #SCV #IdleSCV #SupplyDepots #Refineries #CompletedRefineries #CompletedSupplyDepots #Barrackses #CompletedBarrackses #Marines #Marauders QueuedMarines QueuedMarauders  FreeSupply CanAffordSuppyDepot CanAffordBarracks CanAffordMarine CanAffordMarauder CanAffordRefinery #Hatcheries #Drones #IdleDrones #Overlords #SpawningPools #HyrdaDen #RoachWarren #BanelingNest #Zergling #Banelings #Roaches #Hydralisk #Queens #Air\n")
-            file.close()
-            file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_" + str(self.episodeCount) + "state.txt", "a")
+            # file.close()
+            # file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_" + str(self.episodeCount) + "state.txt", "a")
             file.write(str(self.get_state(obs)))
             file.close()
 
@@ -929,6 +941,11 @@ class SmartAgent(Agent):
             print("Minerals:", minerals)
             print("Vespene:", vespene)
 
+            # Update match_history.
+            
+            self.update_match_history(obs)
+            self.plot_match_history()
+
 
         if self.previous_action is not None:
             lenarmy = len(marines) + len(marauders)
@@ -948,6 +965,63 @@ class SmartAgent(Agent):
         self.previous_action = action
         return getattr(self, action)(obs)
 
+    def update_match_history(self, obs):
+        self.n_games_played += 1
+        index = int(obs.reward) + 1
+
+        try:
+            print("Updating match history.")
+            previous_addition = self.match_history[:, self.match_history.shape[1] - 1]
+            previous_addition = np.expand_dims(previous_addition, axis = 1)
+            
+            # Previously, we simply incremented the number of wins.
+            # Then, we could calculate win rates by dividing the cumulative
+            # sums. But we would be doing this calculation after every game,
+            # so it would probably be time-consuming in the long run.
+            
+            # previous_addition[index, 0] += 1
+            # ...
+
+            # But we can update win rates incrementally.
+            
+            # win_rate_t = 1 / t * sum_{i = 1}^t win_i
+            # win_rate_t = 1 / t * (win_t + sum_{i = 1}^{t - 1} win_i)
+            # win_rate_t = 1 / t * (win_t + (t - 1) win_rate_{t - 1})
+            # win_rate_t = win_t / t + (t - 1) win_rate_{t - 1} / t
+            # win_rate_t = win_t / t + t * win_rate_{t - 1} / t - win_rate_{t - 1} / t
+            # win_rate_t = win_t / t + win_rate_{t - 1} - win_rate_{t - 1} / t
+            # win_rate_t = win_rate_{t - 1} + (win_t - win_rate_{t - 1}) / t
+
+            current_game_result = np.zeros((3, 1))
+            current_game_result[index, 0] += 1
+            new_addition = previous_addition + 1 / self.n_games_played * \
+                           (current_game_result - previous_addition) 
+            
+            self.match_history = np.hstack((self.match_history, new_addition))
+            print("Successfully updated match history.")
+
+        except Exception as e:
+            print(e)
+            self.match_history = np.zeros((3, 1))
+            self.match_history[index, 0] += 1
+
+    def plot_match_history(self):
+        x = [i for i in range(1, self.n_games_played + 1)]
+        
+        fig, ax = plt.subplots()
+
+        ax.plot(x, self.match_history[0])
+        ax.plot(x, self.match_history[1])
+        ax.plot(x, self.match_history[2])
+
+        ax.set_title("Match History")
+        ax.legend(["Lose Rate", "Stalemate Rate", "Win Rate"])
+        
+        ax.xaxis.set_label_text("Number of Games Played")
+        ax.yaxis.set_label_text("Percentage")
+
+        plt.show()
+    
 
 def main(unused_argv):
     agent1 = SmartAgent()
