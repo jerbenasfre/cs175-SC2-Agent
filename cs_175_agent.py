@@ -812,11 +812,12 @@ class SmartAgent(Agent):
         super(SmartAgent, self).step(obs)
         state = str(self.get_state(obs))
         action = self.qtable.choose_action(state)
+        
+        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
+        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
 
         if obs.last():
-            marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-            marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-            scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
             command_centers = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
             barrackses = self.get_my_units_by_type(obs, units.Terran.Barracks)
             supply_depots = self.get_my_units_by_type(obs, units.Terran.SupplyDepot)
@@ -853,10 +854,19 @@ class SmartAgent(Agent):
 
 
         if self.previous_action is not None:
-            self.qtable.learn(self.previous_state,
-                              self.previous_action,
-                              obs.reward,
-                              'terminal' if obs.last() else state)
+            lenarmy = len(marines) + len(marauders)
+            lenwork = len(scvs)
+            
+            if lenwork <= 0:        # To avoid division by zero
+                self.qtable.learn(self.previous_state,
+                                  self.previous_action,
+                                  obs.reward,
+                                  'terminal' if obs.last() else state)
+            else:
+                self.qtable.learn(self.previous_state,
+                                  self.previous_action,
+                                  obs.reward + (lenarmy / lenwork),
+                                  'terminal' if obs.last() else state)
         self.previous_state = state
         self.previous_action = action
         return getattr(self, action)(obs)
