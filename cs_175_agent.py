@@ -47,9 +47,11 @@ class Agent(base_agent.BaseAgent):
                   "build_refinery",
                   "build_supply_depot",
                   "build_barracks",
-                  #"build_expansion",
                   "build_tech_lab",
+                  # =============================================================
+                  #"build_expansion",
                   #"build_engineering_bay",
+                  # =============================================================
                   "train_marine",
                   "train_scv",
                   "train_marauder",
@@ -755,21 +757,54 @@ class SmartAgent(Agent):
         enemy_overlords.extend(self.get_enemy_units_by_type(obs, units.Zerg.Overseer))
         # enemy_completed_overlords = self.get_enemy_completed_units_by_type(
         #    obs, units.Zerg.Overlord)
-        enemy_spawning_pool = self.get_enemy_units_by_type(obs, units.Zerg.SpawningPool)
-        enemy_roach_warren = self.get_enemy_units_by_type(obs, units.Zerg.RoachWarren)
-        enemy_hydralisk_den = self.get_enemy_units_by_type(obs, units.Zerg.HydraliskDen)
-        enemy_banelings_nest = self.get_enemy_units_by_type(obs, units.Zerg.BanelingNest)
+        #enemy_spawning_pool = self.get_enemy_units_by_type(obs, units.Zerg.SpawningPool)
+        #enemy_roach_warren = self.get_enemy_units_by_type(obs, units.Zerg.RoachWarren)
+        #enemy_hydralisk_den = self.get_enemy_units_by_type(obs, units.Zerg.HydraliskDen)
+        #enemy_banelings_nest = self.get_enemy_units_by_type(obs, units.Zerg.BanelingNest)
         # enemy_completed_spawning_pool = self.get_enemy_completed_units_by_type(
         #    obs, units.Zerg.SpawningPool)
-        enemy_zerglings = self.get_enemy_units_by_type(obs, units.Zerg.Zergling)
-        enemy_banelings = self.get_enemy_units_by_type(obs, units.Zerg.Baneling)
-        enemy_hydralisks = self.get_enemy_units_by_type(obs, units.Zerg.Hydralisk)
-        enemy_roaches = self.get_enemy_units_by_type(obs, units.Zerg.Roach)
-        enemy_queens = self.get_my_units_by_type(obs, units.Zerg.Queen)
+        #enemy_zerglings = self.get_enemy_units_by_type(obs, units.Zerg.Zergling)
+        #enemy_banelings = self.get_enemy_units_by_type(obs, units.Zerg.Baneling)
+        #enemy_hydralisks = self.get_enemy_units_by_type(obs, units.Zerg.Hydralisk)
+        #enemy_roaches = self.get_enemy_units_by_type(obs, units.Zerg.Roach)
+        #enemy_queens = self.get_my_units_by_type(obs, units.Zerg.Queen)
+        enemy_buildings = [unit for unit in obs.observation.raw_units
+                        if (unit.unit_type == units.Zerg.SpawningPool
+                        or unit.unit_type == units.Zerg.Spire
+                        or unit.unit_type == units.Zerg.GreaterSpire
+                        or unit.unit_type == units.Zerg.BanelingNest
+                        or unit.unit_type == units.Zerg.UltraliskCavern
+                        or unit.unit_type == units.Zerg.HydraliskDen
+                        or unit.unit_type == units.Zerg.EvolutionChamber
+                        or unit.unit_type == units.Zerg.RoachWarren
+                        or unit.unit_type == units.Zerg.InfestationPit
+                        or unit.unit_type == units.Zerg.LurkerDen
+                        or unit.unit_type == units.Zerg.SporeCrawler
+                        or unit.unit_type == units.Zerg.SporeCrawlerUprooted
+                        or unit.unit_type == units.Zerg.SpineCrawler
+                        or unit.unit_type == units.Zerg.SpineCrawlerUprooted)
+                        and unit.alliance == features.PlayerRelative.ENEMY]
 
-        enemy_air = self.get_enemy_units_by_type(obs, units.Zerg.Mutalisk)
-        enemy_air.extend(self.get_enemy_units_by_type(obs, units.Zerg.BroodLord))
-        enemy_air.extend(self.get_enemy_units_by_type(obs, units.Zerg.Corruptor))
+        enemy_ground = [unit for unit in obs.observation.raw_units
+                        if (unit.unit_type == units.Zerg.Zergling
+                        or unit.unit_type == units.Zerg.Baneling
+                        or unit.unit_type == units.Zerg.Hydralisk
+                        or unit.unit_type == units.Zerg.Lurker
+                        or unit.unit_type == units.Zerg.Roach
+                        or unit.unit_type == units.Zerg.Ravager
+                        or unit.unit_type == units.Zerg.Queen
+                        or unit.unit_type == units.Zerg.Ultralisk
+                        or unit.unit_type == units.Zerg.SwarmHost
+                        or unit.unit_type == units.Zerg.BanelingCocoon
+                        or unit.unit_type == units.Zerg.LurkerCocoon
+                        or unit.unit_type == units.Zerg.Cocoon)
+                        and unit.alliance == features.PlayerRelative.ENEMY]
+
+        enemy_air = [unit for unit in obs.observation.raw_units
+                        if (unit.unit_type == units.Zerg.Mutalisk
+                        or unit.unit_type == units.Zerg.Corruptor
+                        or unit.unit_type == units.Zerg.BroodLord)
+                        and unit.alliance == features.PlayerRelative.ENEMY]
 
         return (len(command_centers),
                 len(scvs),
@@ -795,21 +830,21 @@ class SmartAgent(Agent):
                 len(enemy_drones),
                 len(enemy_idle_drone),
                 len(enemy_overlords),
-                # len(enemy_completed_supply_depots),
-                len(enemy_spawning_pool),
-                len(enemy_hydralisk_den),
-                len(enemy_roach_warren),
-                len(enemy_banelings_nest),
-                # len(enemy_completed_barrackses),
-                len(enemy_zerglings),
-                len(enemy_banelings),
-                len(enemy_roaches),
-                len(enemy_hydralisks),
-                len(enemy_queens),
+                #len(enemy_spawning_pool),
+                #len(enemy_hydralisk_den),
+                #len(enemy_roach_warren),
+                #len(enemy_banelings_nest),
+                len(enemy_buildings),
+                len(enemy_ground),
                 len(enemy_air))
 
     def step(self, obs):
         super(SmartAgent, self).step(obs)
+
+        # Increment e_greedy after 5 episodes
+        #if self.qtable.e_greedy < .90 and self.episodeCount%5 == 0:
+            #self.qtable.increment_greedy()
+
         state = str(self.get_state(obs))
         action = self.qtable.choose_action(state)
 
@@ -830,10 +865,16 @@ class SmartAgent(Agent):
             print("Writing QTable to file episode_"+str(self.episodeCount))
 
             # CHANGE DIRECTORY NAME
-            self.qtable.q_table.to_csv(r"C:\Users\Carmen\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
-            #file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".txt", "w")
-            #file.write(self.qtable.q_table)
-            #file.close()
+            self.qtable.q_table.to_csv(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
+
+            print("Writing state to file episode_"+str(self.episodeCount)+"state.txt")
+            file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+"state.txt", "w")
+            file.write("#CC #SCV #IdleSCV #SupplyDepots #Refineries #CompletedRefineries #CompletedSupplyDepots #Barrackses #CompletedBarrackses #Marines #Marauders QueuedMarines QueuedMarauders  FreeSupply CanAffordSuppyDepot CanAffordBarracks CanAffordMarine CanAffordMarauder CanAffordRefinery #Hatcheries #Drones #IdleDrones #Overlords #SpawningPools #HyrdaDen #RoachWarren #BanelingNest #Zergling #Banelings #Roaches #Hydralisk #Queens #Air\n")
+            file.close()
+            file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_" + str(self.episodeCount) + "state.txt", "a")
+            file.write(str(self.get_state(obs)))
+            file.close()
+
             self.episodeCount += 1
             #print("State:")
             #print("#CC #SCV #IdleSCV #SupplyDepots #Refineries #CompletedRefineries #CompletedSupplyDepots #Barrackses #CompletedBarrackses #Marines #Marauders QueuedMarines QueuedMarauders  FreeSupply CanAffordSuppyDepot CanAffordBarracks CanAffordMarine CanAffordMarauder CanAffordRefinery #Hatcheries #Drones #IdleDrones #Overlords #SpawningPools #HyrdaDen #RoachWarren #BanelingNest #Zergling #Banelings #Roaches #Hydralisk #Queens #Air")
@@ -877,6 +918,7 @@ def main(unused_argv):
                     raw_resolution=64,
                 ),
                 step_mul=48,
+                game_steps_per_episode = 38800,
                 disable_fog=True,
         ) as env:
             run_loop.run_loop([agent1], env, max_episodes=1000)
