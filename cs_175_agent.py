@@ -340,8 +340,8 @@ class Agent(base_agent.BaseAgent):
             comcenter = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
             if len(comcenter) <= 0:
                 # Get a random unit, since the command center is down
-                units = marines + marauders
-                center = random.choice(units)
+                myunits = marines + marauders
+                center = random.choice(myunits)
             else:
                 center = comcenter[0]
             enemy_units = self.get_enemy_units(obs)
@@ -414,8 +414,8 @@ class Agent(base_agent.BaseAgent):
             comcenter = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
             if len(comcenter) <= 0:
                 # Get a random unit, since the command center is down
-                units = marines + marauders
-                center = random.choice(units)
+                myunits = marines + marauders
+                center = random.choice(myunits)
             else:
                 center = comcenter[0]
             enemy_units = self.get_enemy_units(obs)
@@ -491,8 +491,8 @@ class Agent(base_agent.BaseAgent):
             comcenter = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
             if len(comcenter) <= 0:
                 # Get a random unit, since the command center is down
-                units = marines + marauders
-                center = random.choice(units)
+                myunits = marines + marauders
+                center = random.choice(myunits)
             else:
                 center = comcenter[0]
             enemy_units = self.get_enemy_units(obs)
@@ -548,8 +548,8 @@ class Agent(base_agent.BaseAgent):
             comcenter = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
             if len(comcenter) <= 0:
                 # Get a random unit, since the command center is down
-                units = marines + marauders
-                center = random.choice(units)
+                myunits = marines + marauders
+                center = random.choice(myunits)
             else:
                 center = comcenter[0]
             enemy_units = self.get_enemy_units(obs)
@@ -611,8 +611,8 @@ class Agent(base_agent.BaseAgent):
             comcenter = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
             if len(comcenter) <= 0:
                 # Get a random unit, since the command center is down
-                units = marines + marauders
-                center = random.choice(units)
+                myunits = marines + marauders
+                center = random.choice(myunits)
             else:
                 center = comcenter[0]
             enemy_units = self.get_enemy_units(obs)
@@ -668,8 +668,8 @@ class Agent(base_agent.BaseAgent):
             comcenter = self.get_my_units_by_type(obs, units.Terran.CommandCenter)
             if len(comcenter) <= 0:
                 # Get a random unit, since the command center is down
-                units = marines + marauders
-                center = random.choice(units)
+                myunits = marines + marauders
+                center = random.choice(myunits)
             else:
                 center = comcenter[0]
             enemy_units = self.get_enemy_units(obs)
