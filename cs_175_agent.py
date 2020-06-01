@@ -316,6 +316,9 @@ class SmartAgent(Agent):
             print(f"{e}\n")
 
     def save_log(self, obs):
+        
+        raise NotImplementedError
+        
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
         scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
