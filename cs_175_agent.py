@@ -1,5 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 
 import os
@@ -11,7 +9,6 @@ from pysc2.lib import actions, features, units
 from agent import Agent
 from RL_brain import QLearningTable
 
-import pickle
 import time
 
 CURRENT_AGENT_FOLDER = "cs_175_agent"
@@ -23,13 +20,13 @@ class SmartAgent(Agent):
     def __init__(self):
         super(SmartAgent, self).__init__()
         self.qtable = QLearningTable(self.my_actions)
-        self.load_q_table(Q_TABLE_FILE_NAME)
+        self.load_q_table(CURRENT_AGENT_FOLDER, Q_TABLE_FILE_NAME)
         
         self.new_game()
 
-        self.load_match_history(MATCH_HISTORY_FILE_NAME)
+        self.load_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
         self.episode_count = 0
-        self.load_episode_count(EPISODE_COUNT_FILE_NAME)
+        self.load_episode_count(CURRENT_AGENT_FOLDER, EPISODE_COUNT_FILE_NAME)
 
     def reset(self):
         super(SmartAgent, self).reset()
@@ -185,9 +182,9 @@ class SmartAgent(Agent):
             self.update_match_history(obs.reward)
             self.plot_match_history()
             
-            self.save_q_table(Q_TABLE_FILE_NAME)
-            self.save_match_history(MATCH_HISTORY_FILE_NAME)
-            self.save_episode_count(EPISODE_COUNT_FILE_NAME)
+            self.save_q_table(CURRENT_AGENT_FOLDER, Q_TABLE_FILE_NAME)
+            self.save_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
+            self.save_episode_count(CURRENT_AGENT_FOLDER, EPISODE_COUNT_FILE_NAME)
 
         if self.previous_action is not None:
             self.qtable.learn(self.previous_state,
@@ -212,103 +209,18 @@ class SmartAgent(Agent):
         else:
             return (lenarmy / lenwork)
 
-    def update_match_history(self, outcome):
-        """Updates lose rate, stalemate rate, and win rate lists based on the
-        outcome of the current episode.
-        
-        self.match_history is a list of three lists. The lists contain the 
-            agent's lose rates, stalement rates, and win rates per episode re-
-            spectively. For example, self.match_history[0, 3] returns the
-            agent's lose rate as of the 3rd episode.
-            
-        If self.match_history does not exist, then this function will
-            initialize that variable.
-            
-        Otherwise, it will append the lose rate, stalement rate, and win rate
-            as of the current episode to the respective lists in
-            self.match_history.
-        
-        Arguments:
-            outcome: Number in {-1.0, 0.0, 1.0} representing the outcome of the
-                game. -1.0, 0.0, and 1.0 represent whether our agent lost, 
-                reached a stalemate, or won, respectively.
-        """
-        index = int(outcome) + 1
-
-        try:
-            print("Updating match history.")
-            previous_addition = self.match_history[:, self.match_history.shape[1] - 1]
-            previous_addition = np.expand_dims(previous_addition, axis = 1)
-            
-            # Previously, we simply incremented the number of wins.
-            # We figured we could calculate lose, stalemate, and win rates 
-            # later by dividing the cumulative sums with the number of epi-
-            # sodes. 
-            # But we would be doing this calculation after every game, so it 
-            # would probably be time-consuming in the long run.
-            
-            # previous_addition[index, 0] += 1
-            # ...
-
-            # Updating win rates incrementally would save some time, even if
-            # it's by a trivial amount.
-            
-            # win_rate_t = 1 / t * sum_{i = 1}^t win_i
-            # win_rate_t = 1 / t * (win_t + sum_{i = 1}^{t - 1} win_i)
-            # win_rate_t = 1 / t * (win_t + (t - 1) win_rate_{t - 1})
-            # win_rate_t = win_t / t + (t - 1) win_rate_{t - 1} / t
-            # win_rate_t = win_t / t + t * win_rate_{t - 1} / t - win_rate_{t - 1} / t
-            # win_rate_t = win_t / t + win_rate_{t - 1} - win_rate_{t - 1} / t
-            # win_rate_t = win_rate_{t - 1} + (win_t - win_rate_{t - 1}) / t
-
-            current_game_result = np.zeros((3, 1))
-            current_game_result[index, 0] += 1
-            new_addition = previous_addition + 1 / self.episode_count * \
-                           (current_game_result - previous_addition) 
-            
-            self.match_history = np.hstack((self.match_history, new_addition))
-            print("Successfully updated match history.")
-
-        except Exception as e:
-            print(f"{e}\n")
-            self.match_history = np.zeros((3, 1))
-            self.match_history[index, 0] += 1
-
-    def plot_match_history(self):
-        x = [i for i in range(1, self.episode_count + 1)]
-        
-        fig, ax = plt.subplots()
-
-        ax.plot(x, self.match_history[0])
-        ax.plot(x, self.match_history[1])
-        ax.plot(x, self.match_history[2])
-
-        ax.set_title("Match History")
-        ax.legend(["Lose Rate", "Stalemate Rate", "Win Rate"])
-        
-        ax.xaxis.set_label_text("Number of Games Played")
-        ax.yaxis.set_label_text("Percentage")
-
-        plt.show()
-            
-    def get_file_path(self, file_name):
-        if not os.path.exists(CURRENT_AGENT_FOLDER):
-            os.makedirs(CURRENT_AGENT_FOLDER)
-        destination = os.path.join(CURRENT_AGENT_FOLDER, file_name)
-        return destination
-
-    def save_q_table(self, file_name):
+    def save_q_table(self, folder, file_name):
         # print("Writing QTable to file episode_"+str(self.episodeCount))
         # CHANGE DIRECTORY NAME
         # self.qtable.q_table.to_csv(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
         
-        destination = self.get_file_path(file_name)
+        destination = self.get_file_path(folder, file_name)
         print(f"Writing Q-Table to {destination}.\n")
         self.qtable.q_table.to_csv(destination, encoding = 'utf-8', index = False)
         
-    def load_q_table(self, file_name):
+    def load_q_table(self, folder, file_name):
         try:
-            target = os.path.join(CURRENT_AGENT_FOLDER, file_name)
+            target = os.path.join(folder, file_name)
             print(f"Attempting to load Q-Table from '{target}'.")
             self.qtable.q_table = pd.read_csv(target)
             print("Succeeded in loading Q-Table.\n")
@@ -358,38 +270,7 @@ class SmartAgent(Agent):
         print("Tech Labs Up:", len(tech_labs))
         print("Minerals:", minerals)
         print("Vespene:", vespene)
-        
-    def save_match_history(self, file_name):
-        destination = self.get_file_path(file_name)
-        print(f"Writing Match History to {destination}.\n")
-        with open(destination, "wb") as f:
-            np.save(f, self.match_history)
-        
-    def load_match_history(self, file_name):
-        try:
-            target = os.path.join(CURRENT_AGENT_FOLDER, file_name)
-            print(f"Attempting to load Match History from '{target}'.")
-            with open(target, "rb") as f:
-                self.match_history = np.load(f)
-            print("Succeeded in loading Match History.\n")
-        except Exception as e:
-            print(f"{e}\n")
 
-    def save_episode_count(self, file_name):
-        destination = self.get_file_path(file_name)
-        print(f"Saving Episode Count to {destination}.\n")
-        with open(destination, "wb") as f:
-            pickle.dump(self.episode_count, f)
-    
-    def load_episode_count(self, file_name):
-        try:
-            target = os.path.join(CURRENT_AGENT_FOLDER, file_name)
-            print(f"Attempting to load Episode Count from '{target}'.")
-            with open(target, "rb") as f:
-                self.episode_count = pickle.load(f)
-            print("Succeeded in loading Episode Count.\n")
-        except Exception as e:
-            print(f"{e}\n")
     
 
 def main(unused_argv):

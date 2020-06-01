@@ -1,8 +1,12 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import random
 
 from pysc2.agents import base_agent
 from pysc2.lib import actions, features, units
+
+import os
+import pickle
 
 class Agent(base_agent.BaseAgent):
     my_actions = ("do_nothing",
@@ -685,3 +689,122 @@ class Agent(base_agent.BaseAgent):
 #                 "now", marauders, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
 #         return actions.RAW_FUNCTIONS.no_op()
 #===============================================================================
+
+    def update_match_history(self, outcome):
+        """Updates lose rate, stalemate rate, and win rate lists based on the
+        outcome of the current episode.
+        
+        self.match_history is a list of three lists. The lists contain the 
+            agent's lose rates, stalement rates, and win rates per episode re-
+            spectively. For example, self.match_history[0, 3] returns the
+            agent's lose rate as of the 3rd episode.
+            
+        If self.match_history does not exist, then this function will
+            initialize that variable.
+            
+        Otherwise, it will append the lose rate, stalement rate, and win rate
+            as of the current episode to the respective lists in
+            self.match_history.
+        
+        Arguments:
+            outcome: Number in {-1.0, 0.0, 1.0} representing the outcome of the
+                game. -1.0, 0.0, and 1.0 represent whether our agent lost, 
+                reached a stalemate, or won, respectively.
+        """
+        index = int(outcome) + 1
+
+        try:
+            print("Updating match history.")
+            previous_addition = self.match_history[:, self.match_history.shape[1] - 1]
+            previous_addition = np.expand_dims(previous_addition, axis = 1)
+            
+            # Previously, we simply incremented the number of wins.
+            # We figured we could calculate lose, stalemate, and win rates 
+            # later by dividing the cumulative sums with the number of epi-
+            # sodes. 
+            # But we would be doing this calculation after every game, so it 
+            # would probably be time-consuming in the long run.
+            
+            # previous_addition[index, 0] += 1
+            # ...
+
+            # Updating win rates incrementally would save some time, even if
+            # it's by a trivial amount.
+            
+            # win_rate_t = 1 / t * sum_{i = 1}^t win_i
+            # win_rate_t = 1 / t * (win_t + sum_{i = 1}^{t - 1} win_i)
+            # win_rate_t = 1 / t * (win_t + (t - 1) win_rate_{t - 1})
+            # win_rate_t = win_t / t + (t - 1) win_rate_{t - 1} / t
+            # win_rate_t = win_t / t + t * win_rate_{t - 1} / t - win_rate_{t - 1} / t
+            # win_rate_t = win_t / t + win_rate_{t - 1} - win_rate_{t - 1} / t
+            # win_rate_t = win_rate_{t - 1} + (win_t - win_rate_{t - 1}) / t
+
+            current_game_result = np.zeros((3, 1))
+            current_game_result[index, 0] += 1
+            new_addition = previous_addition + 1 / self.episode_count * \
+                           (current_game_result - previous_addition) 
+            
+            self.match_history = np.hstack((self.match_history, new_addition))
+            print("Successfully updated match history.")
+
+        except Exception as e:
+            print(f"{e}\n")
+            self.match_history = np.zeros((3, 1))
+            self.match_history[index, 0] += 1
+
+    def plot_match_history(self):
+        x = [i for i in range(1, self.episode_count + 1)]
+        
+        fig, ax = plt.subplots()
+
+        ax.plot(x, self.match_history[0])
+        ax.plot(x, self.match_history[1])
+        ax.plot(x, self.match_history[2])
+
+        ax.set_title("Match History")
+        ax.legend(["Lose Rate", "Stalemate Rate", "Win Rate"])
+        
+        ax.xaxis.set_label_text("Number of Games Played")
+        ax.yaxis.set_label_text("Percentage")
+
+        plt.show()
+            
+    def get_file_path(self, folder, file_name):
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        destination = os.path.join(folder, file_name)
+        return destination
+    
+    def save_match_history(self, folder, file_name):
+        destination = self.get_file_path(folder, file_name)
+        print(f"Writing Match History to {destination}.\n")
+        with open(destination, "wb") as f:
+            np.save(f, self.match_history)
+        
+    def load_match_history(self, folder, file_name):
+        try:
+            target = os.path.join(folder, file_name)
+            print(f"Attempting to load Match History from '{target}'.")
+            with open(target, "rb") as f:
+                self.match_history = np.load(f)
+            print("Succeeded in loading Match History.\n")
+        except Exception as e:
+            print(f"{e}\n")
+
+    def save_episode_count(self, folder, file_name):
+        destination = self.get_file_path(folder, file_name)
+        print(f"Saving Episode Count to {destination}.\n")
+        with open(destination, "wb") as f:
+            pickle.dump(self.episode_count, f)
+    
+    def load_episode_count(self, folder, file_name):
+        try:
+            target = os.path.join(folder, file_name)
+            print(f"Attempting to load Episode Count from '{target}'.")
+            with open(target, "rb") as f:
+                self.episode_count = pickle.load(f)
+            print("Succeeded in loading Episode Count.\n")
+        except Exception as e:
+            print(f"{e}\n")
+            
+    
