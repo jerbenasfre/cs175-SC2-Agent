@@ -16,42 +16,15 @@ class Agent(base_agent.BaseAgent):
                   "build_supply_depot",
                   "build_barracks",
                   "build_tech_lab",
-                  # =============================================================
-                  #"build_expansion",
-                  #"build_engineering_bay",
-                  # =============================================================
                   "train_marine",
                   "train_scv",
                   "train_marauder",
                   "attack",
-                  #=============================================================
-                  # "attack_expansion1",
-                  # "attack_expansion2",
-                  #=============================================================
                   "attack_all",
-                  #=============================================================
-                  # "attack_all_expansion1",
-                  # "attack_all_expansion2",
-                  #=============================================================
                   "attack_marine",
-                  #=============================================================
-                  # "attack_marine_expansion1",
-                  # "attack_marine_expansion2",
-                  #=============================================================
                   "attack_marine_all",
-                  #=============================================================
-                  # "attack_marine_all_expansion1",
-                  # "attack_marine_all_expansion2",
-                  #=============================================================
                   "attack_marauder",
-                  #=============================================================
-                  # "attack_marauder_expansion1",
-                  # "attack_marauder_expansion2",
-                  #=============================================================
                   "attack_marauder_all")
-                  # "attack_marauder_all_expansion1",
-                  # "attack_marauder_all_expansion2")
-    # episodeCount = 1
 
     def get_my_units_by_type(self, obs, unit_type):
         return [unit for unit in obs.observation.raw_units
@@ -331,50 +304,6 @@ class Agent(base_agent.BaseAgent):
                 "now", unit.tag, (enemy_target.x + x_offset, enemy_target.y + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-#===============================================================================
-#     def attack_expansion1(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marines) > 0 or len(marauders) > 0:
-#             attack_xy = (18,44) if self.base_top_left else (40,23)
-#             army = []
-# 
-#             if len(marines) > 0:
-#                 army.extend(marines)
-#             if len(marauders) > 0:
-#                 army.extend(marauders)
-#             distances = self.get_distances(obs, army, attack_xy)
-#             unit = army[np.argmax(distances)]
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", unit.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-# 
-#     def attack_expansion2(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marines) > 0 or len(marauders) > 0:
-#             attack_xy = (40, 23) if self.base_top_left else (18,44)
-#             army = []
-# 
-#             if len(marines) > 0:
-#                 army.extend(marines)
-#             if len(marauders) > 0:
-#                 army.extend(marauders)
-#             distances = self.get_distances(obs, army, attack_xy)
-#             unit = army[np.argmax(distances)]
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", unit.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-#===============================================================================
-
     def attack_all(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
@@ -407,52 +336,6 @@ class Agent(base_agent.BaseAgent):
                 "now", army, (enemy_target.x + x_offset, enemy_target.y + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-#===============================================================================
-#     def attack_all_expansion1(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marines) > 0:
-#             attack_xy = (18, 44) if self.base_top_left else (40, 23)
-#             army = []
-# 
-#             if len(marines) > 0:
-#                 army.extend(marines)
-#             if len(marauders) > 0:
-#                 army.extend(marauders)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             # Only get 10 marines, randomly selected
-#             army = [unit.tag for unit in army]
-#             random.shuffle(army)
-#             army = army[:11]
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", army, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-# 
-#     def attack_all_expansion2(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marines) > 0:
-#             attack_xy = (40, 23) if self.base_top_left else (18, 44)
-#             army = []
-# 
-#             if len(marines) > 0:
-#                 army.extend(marines)
-#             if len(marauders) > 0:
-#                 army.extend(marauders)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             # Only get 10 marines, randomly selected
-#             army = [unit.tag for unit in army]
-#             random.shuffle(army)
-#             army = army[:11]
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", army, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-#===============================================================================
-
     def attack_marine(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
         if len(marines) > 0:
@@ -477,38 +360,6 @@ class Agent(base_agent.BaseAgent):
             return actions.RAW_FUNCTIONS.Attack_pt(
                 "now", marine.tag, (enemy_target.x + x_offset, enemy_target.y + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
-
-#===============================================================================
-#     def attack_marine_expansion1(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         if len(marines) > 0:
-#             attack_xy = (18,44) if self.base_top_left else (40,23)
-#             distances = self.get_distances(obs, marines, attack_xy)
-#             marine = marines[np.argmax(distances)]
-# 
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-# 
-#     def attack_marine_expansion2(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         if len(marines) > 0:
-#             attack_xy = (40, 23) if self.base_top_left else (18,44)
-#             distances = self.get_distances(obs, marines, attack_xy)
-#             marine = marines[np.argmax(distances)]
-# 
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marine.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-#===============================================================================
 
     def attack_marine_all(self, obs):
         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
@@ -537,42 +388,6 @@ class Agent(base_agent.BaseAgent):
                 "now", marines, (enemy_target.x + x_offset, enemy_target.y + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-#===============================================================================
-#     def attack_marine_all_expansion1(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         if len(marines) > 0:
-#             attack_xy = (18, 44) if self.base_top_left else (40, 23)
-#             distances = self.get_distances(obs, marines, attack_xy)
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             # Only get 10 marines, randomly selected
-#             marines = [marine.tag for marine in marines]
-#             random.shuffle(marines)
-#             marines = marines[:11]
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-# 
-#     def attack_marine_all_expansion2(self, obs):
-#         marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-#         if len(marines) > 0:
-#             attack_xy = (40, 23) if self.base_top_left else (18, 44)
-#             distances = self.get_distances(obs, marines, attack_xy)
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             # Only get 10 marines, randomly selected
-#             marines = [marine.tag for marine in marines]
-#             random.shuffle(marines)
-#             marines = marines[:11]
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marines, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-#===============================================================================
-
     def attack_marauder(self, obs):
         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
         if len(marauders) > 0:
@@ -583,7 +398,11 @@ class Agent(base_agent.BaseAgent):
                 center = random.choice(myunits)
             else:
                 center = comcenter[0]
-            enemy_units = self.get_enemy_units(obs)
+            enemy_units = [unit for unit in obs.observation.raw_units
+                     if (unit.unit_type != units.Zerg.Mutalisk
+                         or unit.unit_type != units.Zerg.Corruptor
+                         or unit.unit_type != units.Zerg.BroodLord)
+                     and unit.alliance == features.PlayerRelative.ENEMY]
             distances = self.get_distances(obs, enemy_units, (center.x, center.y))
             enemy_target = enemy_units[np.argmin(distances)]
             
@@ -598,38 +417,6 @@ class Agent(base_agent.BaseAgent):
                 "now", marauder.tag, (enemy_target.x + x_offset, enemy_target.y + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
 
-#===============================================================================
-#     def attack_marauder_expansion1(self, obs):
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marauders) > 0:
-#             attack_xy = (18,44) if self.base_top_left else (40,23)
-#             distances = self.get_distances(obs, marauders, attack_xy)
-#             marauder = marauders[np.argmax(distances)]
-# 
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marauder.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-# 
-#     def attack_marauder_expansion2(self, obs):
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marauders) > 0:
-#             attack_xy = (40, 23) if self.base_top_left else (18,44)
-#             distances = self.get_distances(obs, marauders, attack_xy)
-#             marauder = marauders[np.argmax(distances)]
-# 
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marauder.tag, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-#===============================================================================
-
     def attack_marauder_all(self, obs):
         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
         if len(marauders) > 0:
@@ -640,7 +427,11 @@ class Agent(base_agent.BaseAgent):
                 center = random.choice(myunits)
             else:
                 center = comcenter[0]
-            enemy_units = self.get_enemy_units(obs)
+            enemy_units = [unit for unit in obs.observation.raw_units
+                           if (unit.unit_type != units.Zerg.Mutalisk
+                               or unit.unit_type != units.Zerg.Corruptor
+                               or unit.unit_type != units.Zerg.BroodLord)
+                           and unit.alliance == features.PlayerRelative.ENEMY]
             distances = self.get_distances(obs, enemy_units, (center.x, center.y))
             enemy_target = enemy_units[np.argmin(distances)]
             
@@ -655,40 +446,6 @@ class Agent(base_agent.BaseAgent):
             return actions.RAW_FUNCTIONS.Attack_pt(
                 "now", marauders, (enemy_target.x + x_offset, enemy_target.y + y_offset))
         return actions.RAW_FUNCTIONS.no_op()
-
-#===============================================================================
-#     def attack_marauder_all_expansion1(self, obs):
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marauders) > 0:
-#             attack_xy = (18, 44) if self.base_top_left else (40, 23)
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             # Only get 10 marines, randomly selected
-#             marauders = [marauder.tag for marauder in marauders]
-#             random.shuffle(marauders)
-#             marauders =marauders[:11]
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marauders, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-# 
-#     def attack_marauder_all_expansion2(self, obs):
-#         marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
-#         if len(marauders) > 0:
-#             attack_xy = (40, 23) if self.base_top_left else (18, 44)
-#             # enemy_location = self.get_enemy_units(obs)
-# 
-#             x_offset = random.randint(-4, 4)
-#             y_offset = random.randint(-4, 4)
-#             # Only get 10 marines, randomly selected
-#             marauders = [marauder.tag for marauder in marauders]
-#             random.shuffle(marauders)
-#             marauders = marauders[:11]
-#             return actions.RAW_FUNCTIONS.Attack_pt(
-#                 "now", marauders, (attack_xy[0] + x_offset, attack_xy[1] + y_offset))
-#         return actions.RAW_FUNCTIONS.no_op()
-#===============================================================================
 
     def update_match_history(self, outcome):
         """Updates lose rate, stalemate rate, and win rate lists based on the
@@ -806,5 +563,3 @@ class Agent(base_agent.BaseAgent):
             print("Succeeded in loading Episode Count.\n")
         except Exception as e:
             print(f"{e}\n")
-            
-    
