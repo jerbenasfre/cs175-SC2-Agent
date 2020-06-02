@@ -5,6 +5,8 @@ import random
 from pysc2.agents import base_agent
 from pysc2.lib import actions, features, units
 
+import helper
+
 import os
 import pickle
 
@@ -769,14 +771,10 @@ class Agent(base_agent.BaseAgent):
 
         plt.show()
             
-    def get_file_path(self, folder, file_name):
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        destination = os.path.join(folder, file_name)
-        return destination
+
     
     def save_match_history(self, folder, file_name):
-        destination = self.get_file_path(folder, file_name)
+        destination = helper.get_file_path(folder, file_name)
         print(f"Writing Match History to {destination}.\n")
         with open(destination, "wb") as f:
             np.save(f, self.match_history)
@@ -792,7 +790,7 @@ class Agent(base_agent.BaseAgent):
             print(f"{e}\n")
 
     def save_episode_count(self, folder, file_name):
-        destination = self.get_file_path(folder, file_name)
+        destination = helper.get_file_path(folder, file_name)
         print(f"Saving Episode Count to {destination}.\n")
         with open(destination, "wb") as f:
             pickle.dump(self.episodes, f)

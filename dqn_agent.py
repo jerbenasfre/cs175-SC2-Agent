@@ -2,24 +2,27 @@ import math
 import random
 
 from collections import namedtuple
-from itertools import count
 
 from absl import app
 # from pysc2.agents import base_agent
 from pysc2.lib import actions, features, units
-from pysc2.env import sc2_env, run_loop
+from pysc2.env import sc2_env
 import time
 
 from cs_175_agent import Agent
+import helper
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+import os
+
 CURRENT_AGENT_FOLDER = "dqn_agent"
 MATCH_HISTORY_FILE_NAME = "match_history.npy"
 EPISODE_COUNT_FILE_NAME = "episode_count.pickle"
+STATE_DICT_FILE_NAME = "state_dict.tar"
 
 
 class DQN(nn.Module):
@@ -256,6 +259,13 @@ def main(unused_argv):
     memory = ReplayMemory(memory_size)
 
     policy_net = DQN(34, len(agent.my_actions))
+    try:
+        target = os.path.join(CURRENT_AGENT_FOLDER, STATE_DICT_FILE_NAME)
+        print(f"Attempting to load Policy Network from '{target}'.")
+        policy_net = torch.load(target)
+        print("Succeeded in loading Policy Network.")
+    except Exception as e:
+        print(e)
     target_net = DQN(34, len(agent.my_actions))
     target_net.load_state_dict(policy_net.state_dict())
     target_net.eval()
@@ -310,9 +320,13 @@ def main(unused_argv):
                     if timesteps[0].last():
                         agent.update_match_history(timesteps[0].reward)
                         agent.plot_match_history()
-                        
+
                         agent.save_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
                         agent.save_episode_count(CURRENT_AGENT_FOLDER, EPISODE_COUNT_FILE_NAME)
+                        
+                        
+                        destination = helper.get_file_path(CURRENT_AGENT_FOLDER, STATE_DICT_FILE_NAME)
+                        torch.save(policy_net.state_dict(), destination)
                         break
 
                         
