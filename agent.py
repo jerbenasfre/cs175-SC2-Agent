@@ -741,7 +741,7 @@ class Agent(base_agent.BaseAgent):
 
             current_game_result = np.zeros((3, 1))
             current_game_result[index, 0] += 1
-            new_addition = previous_addition + 1 / self.episode_count * \
+            new_addition = previous_addition + 1 / self.episodes * \
                            (current_game_result - previous_addition) 
             
             self.match_history = np.hstack((self.match_history, new_addition))
@@ -753,7 +753,7 @@ class Agent(base_agent.BaseAgent):
             self.match_history[index, 0] += 1
 
     def plot_match_history(self):
-        x = [i for i in range(1, self.episode_count + 1)]
+        x = [i for i in range(1, self.episodes + 1)]
         
         fig, ax = plt.subplots()
 
@@ -795,14 +795,14 @@ class Agent(base_agent.BaseAgent):
         destination = self.get_file_path(folder, file_name)
         print(f"Saving Episode Count to {destination}.\n")
         with open(destination, "wb") as f:
-            pickle.dump(self.episode_count, f)
+            pickle.dump(self.episodes, f)
     
     def load_episode_count(self, folder, file_name):
         try:
             target = os.path.join(folder, file_name)
             print(f"Attempting to load Episode Count from '{target}'.")
             with open(target, "rb") as f:
-                self.episode_count = pickle.load(f)
+                self.episodes = pickle.load(f)
             print("Succeeded in loading Episode Count.\n")
         except Exception as e:
             print(f"{e}\n")

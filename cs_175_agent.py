@@ -25,7 +25,6 @@ class SmartAgent(Agent):
         self.new_game()
 
         self.load_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
-        self.episode_count = 0
         self.load_episode_count(CURRENT_AGENT_FOLDER, EPISODE_COUNT_FILE_NAME)
 
     def reset(self):
@@ -176,9 +175,7 @@ class SmartAgent(Agent):
         state = str(self.get_state(obs))
         action = self.qtable.choose_action(state)
         
-        if obs.last():
-            self.episode_count += 1
-                       
+        if obs.last():                       
             self.update_match_history(obs.reward)
             self.plot_match_history()
             
@@ -244,13 +241,13 @@ class SmartAgent(Agent):
         minerals = obs.observation.player.minerals
         vespene = obs.observation.player.vespene
         
-        # print("Writing state to file episode_"+str(self.episode_count)+"state.txt")
+        # print("Writing state to file episode_"+str(self.episodes)+"state.txt")
         
-        file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episode_count)+"state.txt", "w")
+        file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodes)+"state.txt", "w")
 
         file.write("#CC #SCV #IdleSCV #SupplyDepots #Refineries #CompletedRefineries #CompletedSupplyDepots #Barrackses #CompletedBarrackses #Marines #Marauders QueuedMarines QueuedMarauders  FreeSupply CanAffordSuppyDepot CanAffordBarracks CanAffordMarine CanAffordMarauder CanAffordRefinery #Hatcheries #Drones #IdleDrones #Overlords #SpawningPools #HyrdaDen #RoachWarren #BanelingNest #Zergling #Banelings #Roaches #Hydralisk #Queens #Air\n")
         # file.close()
-        # file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_" + str(self.episode_count) + "state.txt", "a")
+        # file = open(r"C:\Users\arkse\Desktop\cs175_episodes\episode_" + str(self.episodes) + "state.txt", "a")
         file.write(str(self.get_state(obs)))
         file.close()
 
