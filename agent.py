@@ -401,7 +401,9 @@ class Agent(base_agent.BaseAgent):
             enemy_units = [unit for unit in obs.observation.raw_units
                      if (unit.unit_type != units.Zerg.Mutalisk
                          or unit.unit_type != units.Zerg.Corruptor
-                         or unit.unit_type != units.Zerg.BroodLord)
+                         or unit.unit_type != units.Zerg.BroodLord
+                         or unit.unit_type != units.Zerg.Overlord
+                         or unit.unit_type != units.Zerg.Overseer)
                      and unit.alliance == features.PlayerRelative.ENEMY]
             distances = self.get_distances(obs, enemy_units, (center.x, center.y))
             enemy_target = enemy_units[np.argmin(distances)]
@@ -430,7 +432,9 @@ class Agent(base_agent.BaseAgent):
             enemy_units = [unit for unit in obs.observation.raw_units
                            if (unit.unit_type != units.Zerg.Mutalisk
                                or unit.unit_type != units.Zerg.Corruptor
-                               or unit.unit_type != units.Zerg.BroodLord)
+                               or unit.unit_type != units.Zerg.BroodLord
+                               or unit.unit_type != units.Zerg.Overlord
+                               or unit.unit_type != units.Zerg.Overseer)
                            and unit.alliance == features.PlayerRelative.ENEMY]
             distances = self.get_distances(obs, enemy_units, (center.x, center.y))
             enemy_target = enemy_units[np.argmin(distances)]

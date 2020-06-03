@@ -11,11 +11,15 @@ from RL_brain import QLearningTable
 
 import time
 
-CURRENT_AGENT_FOLDER = "cs_175_agent2"
+CURRENT_AGENT_FOLDER = "cs_175_agent2b"
 Q_TABLE_FILE_NAME = "q_table.csv"
 MATCH_HISTORY_FILE_NAME = "match_history.npy"
 EPISODE_COUNT_FILE_NAME = "episode_count.pickle"
 
+KILL_UNIT_REWARD = 0.1
+KILL_BUILDING_REWARD = 0.2
+UNIT_LOST_PENALTY = -0.1
+BUILDIG_LOST_PENALTY = -0.2
 
 class SmartAgent(Agent):
     def __init__(self):
@@ -27,6 +31,11 @@ class SmartAgent(Agent):
 
         self.load_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
         self.load_episode_count(CURRENT_AGENT_FOLDER, EPISODE_COUNT_FILE_NAME)
+
+        self.previous_killed_unit_score = 0
+        self.previous_killed_building_score = 0
+        self.previous_unit_count = 0
+        self.previous_building_count = 0
 
     def reset(self):
         super(SmartAgent, self).reset()
@@ -169,14 +178,15 @@ class SmartAgent(Agent):
     def step(self, obs):
         super(SmartAgent, self).step(obs)
 
-        # Increment e_greedy every 5 episodes
-        if self.qtable.epsilon < .90 and self.episodes%5 == 0:
-            self.qtable.increment_greedy()
-
         state = str(self.get_state(obs))
         action = self.qtable.choose_action(state)
 
         if obs.last():
+            # Increment e_greedy every 5 episodes until e_greedy == .90
+            if self.qtable.epsilon < .90 and self.episodes % 5 == 0:
+                self.qtable.increment_greedy()
+                print("Greedy Val:", self.qtable.epsilon)
+
             self.update_match_history(obs.reward)
             self.plot_match_history()
 
@@ -195,17 +205,56 @@ class SmartAgent(Agent):
         return getattr(self, action)(obs)
 
     def custom_reward(self, obs):
-        marines = self.get_my_units_by_type(obs, units.Terran.Marine)
-        marauders = self.get_my_units_by_type(obs, units.Terran.Marauder)
+        killed_unit_score = obs.observation['score_cumulative'][5]
+        killed_building_score = obs.observation['score_cumulative'][6]
+        kill_reward = 0
+        lost_penalty = 0
+
+        unit_count = len([unit for unit in obs.observation.raw_units
+                if (unit.unit_type == units.Terran.Marine or unit.unit_type == units.Terran.Marauder)
+                and unit.alliance == features.PlayerRelative.SELF])
+
+        # Not used for now. Testing unit_count first.
+        #building_count = [unit for unit in obs.observation.raw_units
+        #        if (unit.unit_type == units.Terran.CommandCenter
+        #            or unit.unit_type == units.Terran.Barracks
+        #            or unit.unit_type == units.Terran.SupplyDepot
+        #            or unit.unit_type == units.Terran.Refinery)
+        #        and unit.alliance == features.PlayerRelative.SELF]
+
+        # Checking if previous action was attack so it rewards attacking.
+        if killed_unit_score > self.previous_killed_unit_score and "attack_" in self.previous_action:
+            kill_reward += KILL_UNIT_REWARD
+
+        if killed_building_score > self.previous_killed_building_score and "attack_" in self.previous_action:
+            kill_reward += KILL_BUILDING_REWARD
+
+        self.previous_killed_unit_score = killed_unit_score
+        self.previous_killed_building_score = killed_building_score
+
+        # Penalize for poor attacking or doing nothing while losing troops
+        if unit_count < self.previous_unit_count and ("attack_" in self.previous_action or "do_nothing" == self.previous_action):
+            lost_penalty + UNIT_LOST_PENALTY
+
+        self.previous_unit_count = unit_count
+
         scvs = self.get_my_units_by_type(obs, units.Terran.SCV)
 
-        lenarmy = len(marines) + len(marauders)
+        #lenarmy = len(marines) + len(marauders)
         lenwork = len(scvs)
 
-        if lenwork <= 0:
-            return 0
-        else:
-            return (lenarmy / lenwork)
+        army_reward = 0
+
+        # Only reward army ratio when training to encourage training more. Reason for this change is because I think
+        # the agent was getting points for an army existing and it could influence other actions(like do nothing).
+        # This change hopefully links encourages the train action more.
+        # THIS IS NOT ENOUGH. IT STILL PREFERS TO ATTACK WITH A COUPLE UNITS INSTEAD OF TRAIN MORE
+        if lenwork > 0 and "train_" in self.previous_action:
+            #print("Army/Worker Ratio", unit_count/lenwork)
+            army_reward = (unit_count / lenwork)
+
+        # If the agent did not train or attack, custom reward should return 0
+        return army_reward+kill_reward+lost_penalty
 
     def save_q_table(self, folder, file_name):
         # print("Writing QTable to file episode_"+str(self.episodeCount))
@@ -213,7 +262,7 @@ class SmartAgent(Agent):
         # self.qtable.q_table.to_csv(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
 
         destination = self.get_file_path(folder, file_name)
-        print(f"Writing Q-Table to {destination}.\n")
+        #print(f"Writing Q-Table to {destination}.\n")
         self.qtable.q_table.to_csv(destination, encoding='utf-8', index=False)
 
     def load_q_table(self, folder, file_name):
