@@ -511,11 +511,11 @@ class Agent(base_agent.BaseAgent):
             print("Successfully updated match history.")
 
         except Exception as e:
-            print(f"{e}\n")
+            print(f"{e}.\n")
             self.match_history = np.zeros((3, 1))
             self.match_history[index, 0] += 1
 
-    def plot_match_history(self):
+    def plot_match_history(self, folder, file_name):
         x = [i for i in range(1, self.episodes + 1)]
         
         fig, ax = plt.subplots()
@@ -531,8 +531,10 @@ class Agent(base_agent.BaseAgent):
         ax.yaxis.set_label_text("Percentage")
 
         plt.show()
-            
-
+        
+        destination = helper.get_file_path(folder, file_name)
+        print(f"Saving Plot to {destination}.\n")
+        plt.savefig(destination)
     
     def save_match_history(self, folder, file_name):
         destination = helper.get_file_path(folder, file_name)
@@ -548,7 +550,7 @@ class Agent(base_agent.BaseAgent):
                 self.match_history = np.load(f)
             print("Succeeded in loading Match History.\n")
         except Exception as e:
-            print(f"{e}\n")
+            print(f"{e}.\n")
 
     def save_episode_count(self, folder, file_name):
         destination = helper.get_file_path(folder, file_name)
@@ -564,7 +566,7 @@ class Agent(base_agent.BaseAgent):
                 self.episodes = pickle.load(f)
             print("Succeeded in loading Episode Count.\n")
         except Exception as e:
-            print(f"{e}\n")
+            print(f"{e}.\n")
         
     def save_step_count(self, folder, file_name):
         destination = helper.get_file_path(folder, file_name)
@@ -580,5 +582,5 @@ class Agent(base_agent.BaseAgent):
                 self.steps = pickle.load(f)
             print("Succeeded in loading Step Count.\n")
         except Exception as e:
-            print(f"{e}\n")
+            print(f"{e}.\n")
     

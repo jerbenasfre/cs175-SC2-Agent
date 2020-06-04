@@ -17,6 +17,7 @@ CURRENT_AGENT_FOLDER = "cs_175_agent"
 Q_TABLE_FILE_NAME = "q_table.csv"
 MATCH_HISTORY_FILE_NAME = "match_history.npy"
 EPISODE_COUNT_FILE_NAME = "episode_count.pickle"
+PLOT_FILE_NAME = "figure.png"
 
 class SmartAgent(Agent):
     def __init__(self):
@@ -179,7 +180,7 @@ class SmartAgent(Agent):
         
         if obs.last():                       
             self.update_match_history(obs.reward)
-            self.plot_match_history()
+            self.plot_match_history(CURRENT_AGENT_FOLDER, PLOT_FILE_NAME)
             
             self.save_q_table(CURRENT_AGENT_FOLDER, Q_TABLE_FILE_NAME)
             self.save_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
@@ -224,7 +225,7 @@ class SmartAgent(Agent):
             self.qtable.q_table = pd.read_csv(target)
             print("Succeeded in loading Q-Table.\n")
         except Exception as e:
-            print(f"{e}\n")
+            print(f"{e}.\n")
 
     def save_log(self, obs):
         

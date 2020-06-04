@@ -202,11 +202,14 @@ class RL_Agent(Agent):
         rate = self.strategy.get_exploration_rate(self.steps)
 
         if rate > random.random():
+            print("Explore")
             # random.randrange(stop) returns a randomly selected element from
             # range(stop).
             action = random.randrange(self.num_actions)
             return torch.tensor([action]).to(self.device)                # explore
+            
         else:
+            print("Exploit")
             with torch.no_grad():
                 # return policy_net(state).argmax(dim = 1).to(self.device) # exploit
                 return torch.unsqueeze(policy_net(state).argmax(), 0).to(self.device) # exploit
@@ -294,6 +297,7 @@ def main(unused_argv):
                 state = agent.get_state(timesteps[0])
                 while True:
                     action = agent.select_action(timesteps[0], policy_net)
+                    print(agent.my_actions[action])
                     # Not going to be using the step function.
                     # Actually, we will probably have to use it.
                     # step_actions = [agent.step(timesteps[0])]

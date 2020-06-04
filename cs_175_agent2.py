@@ -10,14 +10,13 @@ from agent import Agent
 from RL_brain import QLearningTable
 import helper
 
-import helper
-
 import time
 
 CURRENT_AGENT_FOLDER = "cs_175_agent2b"
 Q_TABLE_FILE_NAME = "q_table.csv"
 MATCH_HISTORY_FILE_NAME = "match_history.npy"
 EPISODE_COUNT_FILE_NAME = "episode_count.pickle"
+PLOT_FILE_NAME = "figure.png"
 
 KILL_UNIT_REWARD = 0.1
 KILL_BUILDING_REWARD = 0.2
@@ -192,7 +191,7 @@ class SmartAgent(Agent):
                 print("Greedy Val:", self.qtable.epsilon)
 
             self.update_match_history(obs.reward)
-            self.plot_match_history()
+            self.plot_match_history(CURRENT_AGENT_FOLDER, PLOT_FILE_NAME)
 
             self.save_q_table(CURRENT_AGENT_FOLDER, Q_TABLE_FILE_NAME)
             self.save_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
