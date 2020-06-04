@@ -22,6 +22,7 @@ import os
 CURRENT_AGENT_FOLDER = "dqn_agent"
 MATCH_HISTORY_FILE_NAME = "match_history.npy"
 EPISODE_COUNT_FILE_NAME = "episode_count.pickle"
+STEP_COUNT_FILE_NAME = "step_count.pickle"
 STATE_DICT_FILE_NAME = "state_dict.tar"
 
 
@@ -74,7 +75,6 @@ class RL_Agent(Agent):
     def __init__(self, strategy, device):
         super(RL_Agent, self).__init__()
         
-        self.current_step = 0
         self.strategy = strategy
         self.num_actions = len(self.my_actions)
         self.device = device
@@ -83,6 +83,7 @@ class RL_Agent(Agent):
         
         self.load_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
         self.load_episode_count(CURRENT_AGENT_FOLDER, EPISODE_COUNT_FILE_NAME)
+        self.load_step_count(CURRENT_AGENT_FOLDER, STEP_COUNT_FILE_NAME)
         
     def reset(self):
         super(RL_Agent, self).reset()
@@ -198,8 +199,7 @@ class RL_Agent(Agent):
     def select_action(self, obs, policy_net):
         super(RL_Agent, self).step(obs)
         state = self.get_state(obs)
-        rate = self.strategy.get_exploration_rate(self.current_step)
-        self.current_step += 1
+        rate = self.strategy.get_exploration_rate(self.steps)
 
         if rate > random.random():
             # random.randrange(stop) returns a randomly selected element from
@@ -262,7 +262,7 @@ def main(unused_argv):
     try:
         target = os.path.join(CURRENT_AGENT_FOLDER, STATE_DICT_FILE_NAME)
         print(f"Attempting to load Policy Network from '{target}'.")
-        policy_net = torch.load(target)
+        policy_net.load_state_dict(torch.load(target))
         print("Succeeded in loading Policy Network.")
     except Exception as e:
         print(e)
@@ -323,6 +323,7 @@ def main(unused_argv):
 
                         agent.save_match_history(CURRENT_AGENT_FOLDER, MATCH_HISTORY_FILE_NAME)
                         agent.save_episode_count(CURRENT_AGENT_FOLDER, EPISODE_COUNT_FILE_NAME)
+                        agent.save_step_count(CURRENT_AGENT_FOLDER, STEP_COUNT_FILE_NAME)
                         
                         
                         destination = helper.get_file_path(CURRENT_AGENT_FOLDER, STATE_DICT_FILE_NAME)

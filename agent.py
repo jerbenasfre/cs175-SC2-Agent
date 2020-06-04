@@ -565,3 +565,20 @@ class Agent(base_agent.BaseAgent):
             print("Succeeded in loading Episode Count.\n")
         except Exception as e:
             print(f"{e}\n")
+        
+    def save_step_count(self, folder, file_name):
+        destination = helper.get_file_path(folder, file_name)
+        print(f"Saving Step Count to {destination}.\n")
+        with open(destination, "wb") as f:
+            pickle.dump(self.steps, f)
+    
+    def load_step_count(self, folder, file_name):
+        try:
+            target = os.path.join(folder, file_name)
+            print(f"Attempting to load Step Count from '{target}'.")
+            with open(target, "rb") as f:
+                self.steps = pickle.load(f)
+            print("Succeeded in loading Step Count.\n")
+        except Exception as e:
+            print(f"{e}\n")
+    

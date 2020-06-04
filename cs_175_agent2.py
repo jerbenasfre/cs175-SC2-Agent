@@ -10,6 +10,8 @@ from agent import Agent
 from RL_brain import QLearningTable
 import helper
 
+import helper
+
 import time
 
 CURRENT_AGENT_FOLDER = "cs_175_agent2b"
