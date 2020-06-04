@@ -534,7 +534,7 @@ class Agent(base_agent.BaseAgent):
         
         destination = helper.get_file_path(folder, file_name)
         print(f"Saving Plot to {destination}.\n")
-        plt.savefig(destination)
+        fig.savefig(destination)
     
     def save_match_history(self, folder, file_name):
         destination = helper.get_file_path(folder, file_name)
