@@ -8,6 +8,7 @@ from pysc2.lib import actions, features, units
 
 from agent import Agent
 from RL_brain import QLearningTable
+import helper
 
 import time
 
@@ -25,6 +26,7 @@ class SmartAgent(Agent):
     def __init__(self):
         super(SmartAgent, self).__init__()
         self.qtable = QLearningTable(self.my_actions)
+        #self.qtable.epsilon = 0.4
         self.load_q_table(CURRENT_AGENT_FOLDER, Q_TABLE_FILE_NAME)
 
         self.new_game()
@@ -261,7 +263,7 @@ class SmartAgent(Agent):
         # CHANGE DIRECTORY NAME
         # self.qtable.q_table.to_csv(r"C:\Users\arkse\Desktop\cs175_episodes\episode_"+str(self.episodeCount)+".csv", encoding='utf-8', index=False)
 
-        destination = self.get_file_path(folder, file_name)
+        destination = helper.get_file_path(folder, file_name)
         #print(f"Writing Q-Table to {destination}.\n")
         self.qtable.q_table.to_csv(destination, encoding='utf-8', index=False)
 
